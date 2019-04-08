@@ -327,13 +327,21 @@ class player:
             score += 88
         if times.is_dasanyuan(data):
             score += 88
-        # if times.is_jiubaoliandeng(data):
-        #     score += 88
+        if times.is_jiubaoliandeng(data, self.new_pai):
+            score += 88
         if times.is_sigang(data):
             score += 88
         if times.is_lianqidui(data):
             score += 88
-        # 天和，地和，人和，百万和
+        # 天和，地和，人和
+        if len(self.game.pais) == 37 and self.new_pai is None:
+            score += 88
+        if len(self.game.pais) == 36 and len(self.output_pais) == 0:
+            score += 88
+        if len(self.game.pais) == 37 and self.new_pai is not None:
+            score += 88    
+        if times.is_baiwanhe(data):
+            score += 88
 
         ########################### 64 番 ##################
         if times.is_xiaosixi(data):
@@ -344,14 +352,18 @@ class player:
             score += 64
         if times.is_sianke(data):
             score += 64
-        # 一色双龙会 TODO
+        if times.is_yiseshuanglonghui(data):
+            score += 64
         if times.is_xiaosanyuan(data):
             score += 64
 
         ########################### 48 番 ##################
-        # 一色四同顺
+        if times.is_yisesitongsun(data):
+            score += 48
         # 一色四节高
-
+        if times.is_yisesijiegao(data):
+            score += 48
+       
         ########################### 32 番 ##################
         # 一色四步高
         if times.is_sangang(data):
@@ -385,7 +397,12 @@ class player:
         ########################### 8 番 ##################
         # 妙手回春
         # 海底捞月
+        if len(self.game.pais) == 0:
+            score += 8
+
         # 杠上开花
+        if times.is_gangshangkaihua(data, self.new_pai):
+            score += 6
         # 抢杠和
 
         ########################### 6 番 ##################

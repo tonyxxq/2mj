@@ -34,19 +34,20 @@ def is_dasanyuan(data):
     return count_pais_by_types_and_range(data, ['gang', 'kezi'], 14, 16) == 3
 
 
-def is_jiubaoliandeng(data):
+def is_jiubaoliandeng(data, new_pai):
     """
     九宝莲灯，由一种花色序数牌子按1112345678999组成的特定牌型，见同花色任何 1 张序数牌即成胡牌
     """
 
+    if new_pai > 9:
+        return False
+
     # 我手上的所有牌，进行升序排列
-    pais = data['pais']
+    pais =  restore_pais(data)
+    pais.remove(new_pai)
     pais.sort()
 
-    # 对手出牌
-    oppopai = data['oppopai']
-
-    return pais == [1, 1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9] and oppopai <= 9
+    return pais == [1, 1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9]
 
 
 def is_sigang(data):
@@ -54,6 +55,24 @@ def is_sigang(data):
     四杠，牌里有 4 副杠，明暗杠均可
     """
     return count_pais_by_types_and_range(data, ['gang'], 1, 16) == 4
+
+def is_yisesitongsun(data):
+    """
+    """
+    for v in data['sunzi'].values():
+        if v['times'] == 4:
+            return True
+    return  False 
+
+
+def is_yisesijiegao(data):
+    """
+    """
+    pais = data['kezi'].keys()
+    pais.sort()
+
+    # TODO
+    return  False
 
 
 def is_lianqidui(data):
@@ -118,6 +137,17 @@ def is_sianke(data):
 """
 天胡、地胡
 """
+
+def is_baiwanhe(data):
+    #TODO
+    count = 0
+    for pai in restore_pais(data):
+        if pai <= 9:
+            count += pai
+        else:
+            return False
+    return count >= 100
+            
 
 def is_sangang(data):
     """
@@ -212,13 +242,24 @@ def is_haidilaoyue(pais):
     """
     pass
 
+ def is_yiseshuanglonghui(data):
+    # TODO
+    
+    result = []
+    for k, v data['sunzi'].items():
+        result.append(k * v['times'])
 
-def is_gangshangkaihua(pais):
+    result.sort()
+
+    return result == [1, 1, 7, 7] and list(data['jiang'].keys()) = [5]
+
+
+def is_gangshangkaihua(data, new_pai):
     """
     杠上开花，开杠抓进的牌成胡牌（不包括补花）
-    TODO
+    new_pai 
     """
-    pass
+    return new_pai in data['gang'].keys()
 
 
 def is_pengpenghu(data):
