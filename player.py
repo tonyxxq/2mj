@@ -419,7 +419,7 @@ class player:
         if times.is_angang(data):
             score += 2
         if times.is_duan19(data):
-                score += 2
+            score += 2
 
         ########################### 1 番 ##################
         # TODO
