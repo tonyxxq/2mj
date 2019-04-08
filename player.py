@@ -213,6 +213,8 @@ class player:
                 for d in result:
                     # 为 True 表示能胡牌,计算番数
                     total_score = self.cal_score(d)
+                    print(d)
+                    print(total_score)
                     if total_score > self.score:
                         self.score = total_score
                         self.data = d
