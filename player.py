@@ -10,10 +10,11 @@ class Player:
         self.zimo = False  # True 新牌是自己摸的牌 False:碰、胡、杠、吃的对家的牌
         self.dynamic_pais = my_pais  # 手上的牌
         self.output_pais = []  # 我出过的牌
-        self.ting = False    # 是否听牌
+        self.ting = False  # 是否听牌
         self.data = {'jiang': {}, 'sunzi': {}, 'kezi': {}, 'gang': {}}  # 当前胡牌组成的序列，把从对家碰、杠、吃的牌放里边
         self.score = 0  # 当前胡牌得到的最高分数
         self.game = game  # 当前牌局
+        self.name = None
 
     def chupai_process(self):
         """
@@ -43,7 +44,6 @@ class Player:
 
         # 不是胡牌或流局就必须出牌
         if not self.game.finished:
-
             pai = self.chu_pai()
             self.output_pais.append(pai)
 
@@ -213,8 +213,6 @@ class Player:
                 for d in result:
                     # 为 True 表示能胡牌,计算番数
                     total_score = self.cal_score(d)
-                    print(d)
-                    print(total_score)
                     if total_score > self.score:
                         self.score = total_score
                         self.data = d
@@ -249,7 +247,7 @@ class Player:
 
                 zimo = True
                 used_oppo = copy.deepcopy(used_oppo_pai)
-                if not used_oppo and not self.zimo and i == self.new_pai:# 判断这张牌是不是用的对家出的牌
+                if not used_oppo and not self.zimo and i == self.new_pai:  # 判断这张牌是不是用的对家出的牌
                     used_oppo = True
                     zimo = False
 
@@ -268,7 +266,7 @@ class Player:
 
                 zimo = True
                 used_oppo = copy.deepcopy(used_oppo_pai)
-                if not used_oppo_pai and not self.zimo and i == self.new_pai:# 判断这张牌是不是自己用的对家出的牌
+                if not used_oppo_pai and not self.zimo and i == self.new_pai:  # 判断这张牌是不是自己用的对家出的牌
                     used_oppo = True
                     zimo = False
 
@@ -321,24 +319,46 @@ class Player:
         计算牌的得分
         """
 
+        # 排除的番种类型和包括在内的番种类型
+        excludes = []
+        includes = []
+
         score = 0
         ########################### 88番 ##################
+        # 大四喜
         if times.is_dasixi(data):
             score += 88
+            includes.append('大四喜')
+            excludes.extend(['门风刻', '圈分刻', '小四喜', '三风刻', '碰碰和', '幺九刻'])
+        # 大三元
         if times.is_dasanyuan(data):
             score += 88
-        if times.is_jiubaoliandeng(data, self.new_pai):
+            includes.append('大三元')
+            excludes.extend(['小三元', '箭刻', '双箭刻', '幺九刻'])
+        # 九宝莲灯
+        if times.is_jiubaoliandeng(data):
             score += 88
+            includes.append('九宝莲灯')
+            excludes.extend(['清一色', '不求人', '门前清', '幺九刻'])
+        # 四杠
         if times.is_sigang(data):
             score += 88
+            includes.append('四杠')
+            excludes.extend(['三杠', '双暗杠', '双明杠', '明杠', '暗杠', '单钓'])
         if times.is_lianqidui(data):
             score += 88
+            includes.append('连七对')
+            excludes.extend(['清一色', '不求人', '单钓', '门清', '七对', '连六', '一般高'])
         # 天和
         if len(self.game.pais) == 37 and self.name == 'zhuang':
             score += 88
+            includes.append('天和')
+            excludes.extend(['单钓', '边张', '坎张'])
         # 人和
         if len(self.game.pais) == 37 and self.name == 'xian':
             score += 88
+            includes.append('人和')
+            excludes.extend(['单钓', '边张', '坎张'])
         # 地和
         if len(self.game.pais) == 36 and self.name == 'xian' and self.zimo:
             score += 88
@@ -366,9 +386,11 @@ class Player:
         # 一色四节高
         if times.is_yisesijiegao(data):
             score += 48
-       
+
         ########################### 32 番 ##################
         # 一色四步高
+        if times.is_yisesibugao(data):
+            score += 32
         if times.is_sangang(data):
             score += 32
         if times.is_hunyaojiu(data):
@@ -390,6 +412,8 @@ class Player:
         if times.is_qinglong(data):
             score += 16
         # 一色三步高
+        if times.is_yisesanbugao(data):
+            score += 24
         # 三暗刻
         if times.is_sananke(data):
             score += 16
@@ -491,4 +515,3 @@ class Player:
             score += 1
 
         return score
-

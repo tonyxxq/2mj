@@ -1,6 +1,3 @@
-import collections
-
-
 def count_pais_by_types_and_range(data={}, types=[], bein=0, end=0):
     """
     计算指定类型的牌组合（比如刻子、杠等）包含指定范围牌的数量，在计算番数的时候用
@@ -34,20 +31,16 @@ def is_dasanyuan(data):
     return count_pais_by_types_and_range(data, ['gang', 'kezi'], 14, 16) == 3
 
 
-def is_jiubaoliandeng(data, new_pai):
+def is_jiubaoliandeng(data):
     """
     九宝莲灯，由一种花色序数牌子按1112345678999组成的特定牌型，见同花色任何 1 张序数牌即成胡牌
     """
 
-    if new_pai > 9:
-        return False
-
-    # 我手上的所有牌，进行升序排列
     pais = restore_pais(data)
-    pais.remove(new_pai)
-    pais.sort()
-
-    return pais == [1, 1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9]
+    for pai in pais:
+        if pai > 9:
+            return False
+    return set([1, 1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9]).issubset(pais)
 
 
 def is_sigang(data):
@@ -77,9 +70,9 @@ def is_yisesantongsun(data):
     return False
 
 
-def is_yisesijiegao(data):
+def is_yisesibugao(data):
     """
-    一色四节高，比如： 123234345456
+    一色四步高，比如： 123234345456
     """
 
     # 去重且长度必须是 4
@@ -89,17 +82,17 @@ def is_yisesijiegao(data):
 
     # 一阶
     for i in range(1, 5):
-        if set(i, i + 1, i + 2, i + 3).issubset(pais):
+        if set([i, i + 1, i + 2, i + 3]).issubset(pais):
             return True
 
     # 二阶
-    if set(1, 3, 5, 7).issubset(pais):
+    if set([1, 3, 5, 7]).issubset(pais):
         return True
 
     return False
 
 
-def is_yisesanjiegao(data):
+def is_yisesanbugao(data):
     """
     一色四节高，比如： 123234345456
     """
@@ -111,11 +104,67 @@ def is_yisesanjiegao(data):
 
     # 一阶
     for i in range(1, 6):
-        if set(i, i + 1, i + 2).issubset(pais):
+        if set([i, i + 1, i + 2]).issubset(pais):
             return True
 
     # 二阶
-    if set(1, 3, 5).issubset(pais) or set(3, 5, 7).issubset(pais):
+    if set([1, 3, 5]).issubset(pais) or set(3, 5, 7).issubset(pais):
+        return True
+
+    return False
+
+
+def is_yisesijiegao(data):
+    """
+    一色四节高，比如： 111222333444
+    """
+
+    # 去重且长度必须是 4
+    pais = set(data['kezi'].keys())
+    if len(pais) != 4:
+        return False
+
+    for i in range(1, 7):
+        if set([i, i + 1, i + 2, i + 3]).issubset(pais):
+            return True
+
+    return False
+
+
+def is_yisesanjiegao(data):
+    """
+    一色三节高，比如： 111222333
+    """
+
+    # 去重且长度必须大于等于 3
+    pais = set(data['kezi'].keys())
+    if len(pais) < 3:
+        return False
+
+    for i in range(1, 8):
+        if set([i, i + 1, i + 2]).issubset(pais):
+            return True
+
+    return False
+
+
+def is_yisesanbugao(data):
+    """
+    一色四节高，比如： 123234345456
+    """
+
+    # 去重且长度必须大于 3
+    pais = set(data['sunzi'].keys())
+    if len(pais) < 3:
+        return False
+
+    # 一阶
+    for i in range(1, 6):
+        if set([i, i + 1, i + 2]).issubset(pais):
+            return True
+
+    # 二阶
+    if set([1, 3, 5]).issubset(pais) or set([3, 5, 7]).issubset(pais):
         return True
 
     return False

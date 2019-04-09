@@ -2,6 +2,7 @@ import random
 from game import Game
 from player import Player
 import times
+import time
 
 
 def main():
@@ -38,9 +39,15 @@ def main():
                 player1.oppo_pai = pai
         turn = not turn
 
-    print("player1: data", times.restore_pais(player1.data), player1.data,player1.dynamic_pais, " score: ", player1.score)
-    print("player2: data", times.restore_pais(player2.data), player2.data, player2.dynamic_pais, " score: ", player2.score)
+    print("player1: data", times.restore_pais(player1.data), player1.data, player1.dynamic_pais, " score: ",
+          player1.score)
+    print("player2: data", times.restore_pais(player2.data), player2.data, player2.dynamic_pais, " score: ",
+          player2.score)
 
 
 if __name__ == '__main__':
+    # start_time =time.time()
+    # for i in range(100):
     main()
+    # end_time =time.time()
+    # print(start_time - end_time)
