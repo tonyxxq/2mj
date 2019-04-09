@@ -1,6 +1,7 @@
 import random
 from game import Game
-from player import Player
+from deepplayer import DeepPlayer
+from aiplayer import AiPlayer
 import times
 import time
 
@@ -9,9 +10,9 @@ def main():
     # 初始化牌局，洗牌
     paiju = Game()
 
-    # 初始化两个选手
-    player1 = Player(paiju.fapai(), paiju)
-    player2 = Player(paiju.fapai(), paiju)
+    # 初始化两个选手，第一个选手是普通对手，第二个对手使用深度学习确定出牌规则
+    player1 = AiPlayer(paiju.fapai(), paiju)
+    player2 = DeepPlayer(paiju.fapai(), paiju)
 
     # 确定庄、闲，摸牌的顺序，游戏没完成就循环执行, 要么有人胡，要么牌摸完了
     turn = random.random() >= 0.5
@@ -46,8 +47,8 @@ def main():
 
 
 if __name__ == '__main__':
-    start_time =time.time()
-    for i in range(1000):
-        main()
-    end_time =time.time()
-    print(start_time - end_time)
+    # start_time =time.time()
+    # for i in range(1000):
+    main()
+    # end_time =time.time()
+    # print(start_time - end_time)
