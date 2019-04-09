@@ -43,7 +43,7 @@ def is_jiubaoliandeng(data, new_pai):
         return False
 
     # 我手上的所有牌，进行升序排列
-    pais =  restore_pais(data)
+    pais = restore_pais(data)
     pais.remove(new_pai)
     pais.sort()
 
@@ -56,23 +56,69 @@ def is_sigang(data):
     """
     return count_pais_by_types_and_range(data, ['gang'], 1, 16) == 4
 
+
 def is_yisesitongsun(data):
     """
+    一色四同顺， 比如：3333444455556666
     """
     for v in data['sunzi'].values():
         if v['times'] == 4:
             return True
-    return  False 
+    return False
+
+
+def is_yisesantongsun(data):
+    """
+    一色三同顺， 比如：333344445555
+    """
+    for v in data['sunzi'].values():
+        if v['times'] == 3:
+            return True
+    return False
 
 
 def is_yisesijiegao(data):
     """
+    一色四节高，比如： 123234345456
     """
-    pais = data['kezi'].keys()
-    pais.sort()
 
-    # TODO
-    return  False
+    # 去重且长度必须是 4
+    pais = set(data['sunzi'].keys())
+    if len(pais) != 4:
+        return False
+
+    # 一阶
+    for i in range(1, 5):
+        if set(i, i + 1, i + 2, i + 3).issubset(pais):
+            return True
+
+    # 二阶
+    if set(1, 3, 5, 7).issubset(pais):
+        return True
+
+    return False
+
+
+def is_yisesanjiegao(data):
+    """
+    一色四节高，比如： 123234345456
+    """
+
+    # 去重且长度必须大于 3
+    pais = set(data['sunzi'].keys())
+    if len(pais) < 3:
+        return False
+
+    # 一阶
+    for i in range(1, 6):
+        if set(i, i + 1, i + 2).issubset(pais):
+            return True
+
+    # 二阶
+    if set(1, 3, 5).issubset(pais) or set(3, 5, 7).issubset(pais):
+        return True
+
+    return False
 
 
 def is_lianqidui(data):
@@ -134,12 +180,11 @@ def is_sianke(data):
             count += 1;
     return count == 4
 
-"""
-天胡、地胡
-"""
 
 def is_baiwanhe(data):
-    #TODO
+    """
+    百万和，所有万牌之和超过 100
+    """
     count = 0
     for pai in restore_pais(data):
         if pai <= 9:
@@ -147,7 +192,7 @@ def is_baiwanhe(data):
         else:
             return False
     return count >= 100
-            
+
 
 def is_sangang(data):
     """
@@ -196,12 +241,15 @@ def is_qinglong(data):
     """
     清龙，有 123，456，789 三付顺子即可
     """
+    pais = set(data['sunzi'].keys())
+    return set([1, 4, 7]).issubset(pais)
 
-    for pai in [1, 4, 7]:
-        if pai not in data['sunzi'].keys():
-            return False
 
-    return True
+def is_sananke(data):
+    """
+    三暗刻，有三个暗刻
+    """
+    return len(list(filter(lambda x: x['zimo'], data['kezi'].values()))) == 3
 
 
 def is_dayu5(data):
@@ -230,7 +278,7 @@ def is_xiaoyu5(data):
 
 def is_sanfengke(data):
     """
-    三风刻, 牌里有3个风刻（杠）
+    三风刻, 牌里有 3 个风刻（杠）
     """
     return count_pais_by_types_and_range(data, ['kezi', 'gang'], 10, 13) == 3
 
@@ -238,27 +286,24 @@ def is_sanfengke(data):
 def is_haidilaoyue(pais):
     """
     海底捞月，自摸或胡对方打出的最后一张牌
-    TODO
     """
     pass
 
- def is_yiseshuanglonghui(data):
-    # TODO
-    
-    result = []
-    for k, v data['sunzi'].items():
-        result.append(k * v['times'])
 
-    result.sort()
-
-    return result == [1, 1, 7, 7] and list(data['jiang'].keys()) = [5]
+def is_yiseshuanglonghui(data):
+    """
+    一色双龙会，一种花色的两个老少副，5 为将牌    
+    """
+    pais = restore_pais(data)
+    return pais == [1, 1, 2, 2, 3, 3, 5, 5, 7, 7, 8, 8, 9, 9]
 
 
 def is_gangshangkaihua(data, new_pai):
     """
-    杠上开花，开杠抓进的牌成胡牌（不包括补花）
-    new_pai 
+    杠上开花，开杠抓进的牌成胡牌
     """
+    # TODO
+    # 只要新摸的牌判断新的牌在杠里边
     return new_pai in data['gang'].keys()
 
 
@@ -328,11 +373,19 @@ def is_buqiuren(data):
     """
     pass
 
+
 def is_shuangminggang(data):
     """
     双明杠，牌里有 2 个明杠
     """
     return len(list(filter(lambda x: x['zimo'], data['gang'].values()))) > 1
+
+
+def is_pengpenghe(data):
+    """
+    碰碰和，牌里 4 个刻子（杠）加将牌组成
+    """
+    return len(list(data['kezi'].keys())) + len(list(data['gang'].keys())) == 4
 
 
 def is_tingpai():
@@ -358,6 +411,7 @@ def is_menqianqing(data):
             if v2['zimo'] is False:
                 return False
     return True
+
 
 def is_siguiyi(data):
     """
@@ -392,6 +446,24 @@ def is_duan19(data):
         if pai in [1, 9, 10, 11, 12, 13, 14, 15, 16]:
             return False
     return True
+
+
+def is_258wan(data):
+    """
+    258 萬，258 
+    """
+    # TODO
+    return False
+
+
+def is_yibangao(data):
+    """
+    一般高，包含两个相同的顺子,比如 223344
+    """
+    for v in data['sunzi'].values():
+        if v['times'] == 2:
+            return True
+    return False
 
 
 def is_lian6(data):
@@ -444,18 +516,32 @@ def is_kanzhang(pais):
     pass
 
 
+def is_pinghe(data):
+    """
+    平和，由 4 副顺子及序数牌作将组成的和牌
+    """
+    # 判断将是不是序数牌
+    for key in data['jiang'].keys():
+        if key > 9:
+            return False
+
+    # 判断是不是 4 个顺子
+    count = 0
+    for v in data['sunzi'].values():
+        count += v['times']
+
+    return count == 4
+
+
 def is_dandiaojiang(data):
     """
     单钓将，胡牌说明：钓单张牌作将成胡。不计边张坎张。
     """
-    pass
-
-
-def is_zimo(data):
-    """
-    自摸，自己摸的牌胡
-    """
-    pass
+    # 将牌不是自摸的，表示单调将
+    for v in data['jiang'].values():
+        if not v['zimo']:
+            return True
+    return False
 
 
 def restore_pais(data):
@@ -498,9 +584,8 @@ if __name__ == '__main__':
         "sunzi": {
             7: {'times': 2, 'zimo': True},
         },
-        'jiang':{
+        'jiang': {
             8: {'times': 2, 'zimo': True},
         }
     }
     print(is_menqianqing(data))
-

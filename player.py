@@ -3,7 +3,7 @@ import collections
 import times
 
 
-class player:
+class Player:
     def __init__(self, my_pais, game):
         self.new_pai = None  # 我新进的最新一张牌，可能是自己摸的或
         self.oppo_pai = None  # 我新进的最新一张牌，可能是自己摸的或
@@ -333,13 +333,16 @@ class player:
             score += 88
         if times.is_lianqidui(data):
             score += 88
-        # 天和，地和，人和
-        if len(self.game.pais) == 37 and self.new_pai is None:
+        # 天和
+        if len(self.game.pais) == 37 and self.name == 'zhuang':
             score += 88
-        if len(self.game.pais) == 36 and len(self.output_pais) == 0:
+        # 人和
+        if len(self.game.pais) == 37 and self.name == 'xian':
             score += 88
-        if len(self.game.pais) == 37 and self.new_pai is not None:
-            score += 88    
+        # 地和
+        if len(self.game.pais) == 36 and self.name == 'xian' and self.zimo:
+            score += 88
+        # 百万和
         if times.is_baiwanhe(data):
             score += 88
 
@@ -377,13 +380,19 @@ class player:
         if times.is_qingyise(data):
             score += 24
         # 一色三同顺
+        if times.is_yisesantongsun(data):
+            score += 24
         # 一色三节高
+        if times.is_yisesanjiegao(data):
+            score += 24
 
         ########################### 16 番 ##################
         if times.is_qinglong(data):
             score += 16
         # 一色三步高
         # 三暗刻
+        if times.is_sananke(data):
+            score += 16
         # 天听
 
         ########################### 12 番 ##################
@@ -395,11 +404,12 @@ class player:
             score += 12
 
         ########################### 8 番 ##################
-        # 妙手回春
-        # 海底捞月
-        if len(self.game.pais) == 0:
+        # 妙手回春，自摸上最后一张牌胡牌
+        if len(self.game.pais) == 0 and self.zimo:
             score += 8
-
+        # 海底捞月，胡对方打出的最后一张牌
+        if len(self.game.pais) == 0 and not self.zimo:
+            score += 8
         # 杠上开花
         if times.is_gangshangkaihua(data, self.new_pai):
             score += 6
@@ -407,6 +417,8 @@ class player:
 
         ########################### 6 番 ##################
         # 碰碰和
+        if times.is_pengpenghe(data):
+            score += 6
         if times.is_hunyise(data):
             score += 6
         if times.is_quanqiuren(data):
@@ -417,7 +429,6 @@ class player:
             score += 6
 
         ########################### 4 番 ##################
-        # 碰碰和
         if times.is_quandaiyao(data):
             score += 4
         if times.is_buqiuren(data):
@@ -430,18 +441,54 @@ class player:
         ########################### 2 番 ##################
         if times.is_jianke(data):
             score += 2
-        # if times.is_menqianqing(data):
-        #     score += 2
+        # 圈风刻
+        # 门风刻
+        # 门前清
+        if times.is_menqianqing(data):
+            score += 2
+        # 平和
+        if times.is_pinghe(data):
+            score += 2
+        # 四归一
         if times.is_shuanganke(data):
             score += 2
-
         if times.is_angang(data):
             score += 2
         if times.is_duan19(data):
             score += 2
 
         ########################### 1 番 ##################
+        # 二五八万
+        if times.is_258wan(data):
+            score += 1
+        # 幺九头
         # TODO
+
+        # 报听
+        # 一般高
+        if times.is_yibangao(data):
+            score += 1
+        # 连六
+        if times.is_lian6(data):
+            score += 1
+        # 老少副
+        if times.is_laoshaofu(data):
+            score += 1
+        # 幺九刻
+        if times.is_yaojiuke(data):
+            score += 1
+        # 明杠
+        if times.is_minggang(data):
+            score += 1
+        # 边张
+        # 坎张
+        # 单调将
+        if times.is_dandiaojiang(data):
+            score += 1
+
+        # 自摸
+        if self.zimo:
+            score += 1
 
         return score
 

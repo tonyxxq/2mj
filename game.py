@@ -1,7 +1,7 @@
 import random
 
 
-class game:
+class Game:
     def __init__(self):
         # 一共有多少种类型的牌
         self.pai_types = {'WAN_1': 1, 'WAN_2': 2, 'WAN_3': 3, 'WAN_4': 4, 'WAN_5': 5, 'WAN_6': 6, 'WAN_7': 7,
