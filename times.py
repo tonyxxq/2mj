@@ -224,9 +224,10 @@ def is_sianke(data):
     """
 
     count = 0
-    for k, v in data['gang'].items():
+    for v in list(data['gang'].values()) + list(data['kezi'].values()):
         if v['zimo'] == 1:
-            count += 1;
+            count += 1
+
     return count == 4
 
 
@@ -402,6 +403,17 @@ def is_quanangang(data):
     return count >= 2
 
 
+def is_shuangangang(data):
+    """
+    双暗杠, 牌里有 2 副暗杠
+    """
+    count = 0
+    for v in data['gang'].values():
+        if v['zimo']:
+            count += 1
+    return count == 2
+
+
 def is_shuangjianke(data):
     """
     双箭刻, 牌里有 2 副箭刻（或杠）
@@ -540,7 +552,8 @@ def is_yaojiuke(data):
     """
     幺九刻，牌里有序数为一、九的一副刻子（杠）或是字牌的一副刻子（杠）
     """
-    return len(list(filter(lambda x: x in [1, 9, 10, 11, 12, 13, 14, 15, 16], data['kezi'].keys()))) > 0
+    keys = list(data['kezi'].keys()) + list(data['gang'].keys())
+    return len(list(filter(lambda x: x in [1, 9, 10, 11, 12, 13, 14, 15, 16], keys))) > 0
 
 
 def is_minggang(data):
@@ -550,19 +563,34 @@ def is_minggang(data):
     return len(list(filter(lambda x: x['zimo'] is False, data['gang'].values()))) > 0
 
 
-def is_danzhang(pais):
+def is_bianzhang(data, pai, dynamic_pais):
     """
-    TODO
-    单张，单胡123的3及789的7或1233和3、7789和7都为边张。手中有12345或1112胡3，56789或8889胡7不算边张。
+    边张，单胡 123 的 3 及 789 的 7 或 1233 和 3、7789 和 7 都为边张。
+    手中有 12345 或 1112 胡 3，56789 或 8889 胡 7 不算边张。
     """
-    pass
+
+    keys = list(data['sunzi'].keys())
+
+    # 新摸的牌作为顺子的第一个牌
+    if pai in keys and pai - 2 not in keys \
+            and dynamic_pais.count(pai + 1) == 1 and dynamic_pais.count(pai + 2) == 1:
+        return True
+
+    # 新摸的牌作为顺子的最后一个牌
+    if pai - 2 in keys and pai not in keys \
+            and dynamic_pais.count(pai - 1) == 1 and dynamic_pais.count(pai - 2) == 1:
+        return True
+
+    return False
 
 
-def is_kanzhang(pais):
+def is_kanzhang(data, pai):
     """
-    坎张，胡牌说明：胡牌时，胡 2 张牌之间的牌。4556 和 5 也为坎张，手中有45567胡6不算坎张。不计边张、单调将。
+    坎张，胡牌说明：胡牌时，胡 2 张牌之间的牌。4556 和 5 也为坎张，
+    手中有 45567 胡 6 不算坎张。不计边张、单调将。
     """
-    pass
+    keys = data['sunzi'].keys()
+    return pai - 1 in keys and pai - 2 not in keys
 
 
 def is_pinghe(data):

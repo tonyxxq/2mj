@@ -40,14 +40,14 @@ def main():
         turn = not turn
 
     print("player1: data", times.restore_pais(player1.data), player1.data, player1.dynamic_pais, " score: ",
-          player1.score)
+          player1.score, player1.fanzhong)
     print("player2: data", times.restore_pais(player2.data), player2.data, player2.dynamic_pais, " score: ",
-          player2.score)
+          player2.score, player2.fanzhong)
 
 
 if __name__ == '__main__':
-    # start_time =time.time()
-    # for i in range(100):
-    main()
-    # end_time =time.time()
-    # print(start_time - end_time)
+    start_time =time.time()
+    for i in range(1000):
+        main()
+    end_time =time.time()
+    print(start_time - end_time)

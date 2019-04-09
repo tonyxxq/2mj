@@ -15,6 +15,7 @@ class Player:
         self.score = 0  # 当前胡牌得到的最高分数
         self.game = game  # 当前牌局
         self.name = None
+        self.fanzhong = None  # 胡牌的番种
 
     def chupai_process(self):
         """
@@ -91,6 +92,10 @@ class Player:
         """
         判断是否可以吃对家出的牌
         """
+
+        # 如果当前手上的牌的数量小于等于 2 不能吃牌
+        if len(self.dynamic_pais) <= 2:
+            return False
 
         if self.oppo_pai <= 9 and self.oppo_pai - 2 in self.dynamic_pais and self.oppo_pai - 1 in self.dynamic_pais:
             return True
@@ -212,10 +217,11 @@ class Player:
 
                 for d in result:
                     # 为 True 表示能胡牌,计算番数
-                    total_score = self.cal_score(d)
+                    total_score, fanzhong = self.cal_score(d)
                     if total_score > self.score:
                         self.score = total_score
                         self.data = d
+                        self.fanzhong = fanzhong
 
                 pai_count[i] += 2
 
@@ -325,22 +331,18 @@ class Player:
 
         score = 0
         ########################### 88番 ##################
-        # 大四喜
         if times.is_dasixi(data):
             score += 88
             includes.append('大四喜')
             excludes.extend(['门风刻', '圈分刻', '小四喜', '三风刻', '碰碰和', '幺九刻'])
-        # 大三元
         if times.is_dasanyuan(data):
             score += 88
             includes.append('大三元')
             excludes.extend(['小三元', '箭刻', '双箭刻', '幺九刻'])
-        # 九宝莲灯
         if times.is_jiubaoliandeng(data):
             score += 88
             includes.append('九宝莲灯')
             excludes.extend(['清一色', '不求人', '门前清', '幺九刻'])
-        # 四杠
         if times.is_sigang(data):
             score += 88
             includes.append('四杠')
@@ -349,169 +351,213 @@ class Player:
             score += 88
             includes.append('连七对')
             excludes.extend(['清一色', '不求人', '单钓', '门清', '七对', '连六', '一般高'])
-        # 天和
         if len(self.game.pais) == 37 and self.name == 'zhuang':
             score += 88
             includes.append('天和')
             excludes.extend(['单钓', '边张', '坎张'])
-        # 人和
         if len(self.game.pais) == 37 and self.name == 'xian':
             score += 88
             includes.append('人和')
             excludes.extend(['单钓', '边张', '坎张'])
-        # 地和
         if len(self.game.pais) == 36 and self.name == 'xian' and self.zimo:
             score += 88
-        # 百万和
+            includes.append('地和')
         if times.is_baiwanhe(data):
             score += 88
+            includes.append('百万和')
 
         ########################### 64 番 ##################
-        if times.is_xiaosixi(data):
+        # 小四喜
+        if '小四喜' not in excludes and times.is_xiaosixi(data):
             score += 64
-        if times.is_xiaosanyuan(data):
+            includes.append('小四喜')
+            excludes.extend([' 三风刻', '幺九刻'])
+        if '小三元' not in excludes and times.is_xiaosanyuan(data):
             score += 64
-        if times.is_ziyise(data):
+            includes.append('小三元')
+            excludes.extend([' 箭刻', '双箭刻'])
+        if '字一色' not in excludes and times.is_ziyise(data):
             score += 64
-        if times.is_sianke(data):
+            includes.append('字一色')
+            excludes.extend([' 碰碰胡', '混幺九', '全带幺', '幺九刻'])
+        if '四暗刻' not in excludes and times.is_sianke(data):
             score += 64
-        if times.is_yiseshuanglonghui(data):
+            includes.append('四暗刻')
+            excludes.extend(['门前清', '三暗刻', '双暗刻', '不求人'])
+        if '一色双龙会' not in excludes and times.is_yiseshuanglonghui(data):
             score += 64
-        if times.is_xiaosanyuan(data):
+            includes.append('一色双龙会')
+        if '小三元' not in excludes and times.is_xiaosanyuan(data):
             score += 64
+            includes.append('小三元')
+            excludes.extend(['箭刻', '双箭刻'])
 
         ########################### 48 番 ##################
-        if times.is_yisesitongsun(data):
+        if '一色四同顺' not in excludes and times.is_yisesitongsun(data):
             score += 48
-        # 一色四节高
-        if times.is_yisesijiegao(data):
+            includes.append('一色四同顺')
+        if '一色四节高' not in excludes and times.is_yisesijiegao(data):
+            includes.append('一色四节高')
             score += 48
 
         ########################### 32 番 ##################
-        # 一色四步高
-        if times.is_yisesibugao(data):
+        if '一色四步顺' not in excludes and times.is_yisesibugao(data):
             score += 32
-        if times.is_sangang(data):
+            includes.append('一色四步顺')
+        if '三杠' not in excludes and times.is_sangang(data):
             score += 32
-        if times.is_hunyaojiu(data):
+            includes.append('三杠')
+        if '混幺九' not in excludes and times.is_hunyaojiu(data):
             score += 32
+            includes.append('混幺九')
 
         ########################### 24 番 ##################
-        if times.is_qidui(data):
+        if '七对' not in excludes and times.is_qidui(data):
             score += 24
-        if times.is_qingyise(data):
+            includes.append('七对')
+        if '清一色' not in excludes and times.is_qingyise(data):
             score += 24
-        # 一色三同顺
-        if times.is_yisesantongsun(data):
+            includes.append('清一色')
+        if '一色三同顺' not in excludes and times.is_yisesantongsun(data):
             score += 24
-        # 一色三节高
-        if times.is_yisesanjiegao(data):
+            includes.append('一色三同顺')
+        if '一色三节高' not in excludes and times.is_yisesanjiegao(data):
             score += 24
+            includes.append('一色三节高')
 
         ########################### 16 番 ##################
-        if times.is_qinglong(data):
+        if '清龙' not in excludes and times.is_qinglong(data):
             score += 16
-        # 一色三步高
-        if times.is_yisesanbugao(data):
+            includes.append('清龙')
+            excludes.extend(['连六', '老少副'])
+        if '一色三步高' not in excludes and times.is_yisesanbugao(data):
             score += 24
-        # 三暗刻
-        if times.is_sananke(data):
+            includes.append('一色三步高')
+        if '三暗刻' not in excludes and times.is_sananke(data):
             score += 16
+            includes.append('三暗刻')
+            excludes.extend(['双暗刻'])
         # 天听
 
         ########################### 12 番 ##################
-        if times.is_dayu5(data):
+        if '大于五' not in excludes and times.is_dayu5(data):
             score += 12
-        if times.is_xiaoyu5(data):
+            includes.append('大于五')
+        if '小于五' not in excludes and times.is_xiaoyu5(data):
             score += 12
-        if times.is_sanfengke(data):
+            includes.append('小于五')
+        if '三风刻' not in excludes and times.is_sanfengke(data):
             score += 12
+            includes.append('三风刻')
 
         ########################### 8 番 ##################
         # 妙手回春，自摸上最后一张牌胡牌
-        if len(self.game.pais) == 0 and self.zimo:
+        if '妙手回春' not in excludes and len(self.game.pais) == 0 and self.zimo:
             score += 8
-        # 海底捞月，胡对方打出的最后一张牌
-        if len(self.game.pais) == 0 and not self.zimo:
+            includes.append('妙手回春')
+        if '海底捞月' not in excludes and len(self.game.pais) == 0 and not self.zimo:
             score += 8
-        # 杠上开花
-        if times.is_gangshangkaihua(data, self.new_pai):
+            includes.append('海底捞月')
+            excludes.extend(['自摸'])
+        if '杠上开花' not in excludes and times.is_gangshangkaihua(data, self.new_pai):
             score += 6
+            includes.append('杠上开花')
+            excludes.extend(['自摸'])
         # 抢杠和
 
         ########################### 6 番 ##################
         # 碰碰和
-        if times.is_pengpenghe(data):
+        if '碰碰和' not in excludes and times.is_pengpenghe(data):
             score += 6
-        if times.is_hunyise(data):
+            includes.append('碰碰和')
+        if '混一色' not in excludes and times.is_hunyise(data):
             score += 6
-        if times.is_quanqiuren(data):
+            includes.append('混一色')
+        if '全求人' not in excludes and times.is_quanqiuren(data):
             score += 6
-        if times.is_shuanganke(data):
+            includes.append('全求人')
+            excludes.extend(['单钓'])
+        if '双暗杠' not in excludes and times.is_shuangangang(data):
             score += 6
-        if times.is_shuangjianke(data):
+            includes.append('双暗杠')
+            includes.append('双暗刻')
+        if '双箭刻' not in excludes and times.is_shuangjianke(data):
             score += 6
+            includes.append('双箭刻')
+            excludes.extend(['箭刻'])
 
         ########################### 4 番 ##################
-        if times.is_quandaiyao(data):
+        if '全带幺' not in excludes and times.is_quandaiyao(data):
             score += 4
-        if times.is_buqiuren(data):
+            includes.append('全带幺')
+        if '不求人' not in excludes and times.is_buqiuren(data):
             score += 4
-        if times.is_shuangminggang(data):
+            includes.append('不求人')
+            excludes.extend(['门前清', '自摸'])
+        if '双明杠' not in excludes and times.is_shuangminggang(data):
             score += 4
+            includes.append('双明杠')
+            excludes.extend(['明杠'])
         # 和绝张
         # 立值
 
         ########################### 2 番 ##################
-        if times.is_jianke(data):
+        if '双明杠' not in excludes and times.is_jianke(data):
             score += 2
+            includes.append('箭刻')
         # 圈风刻
         # 门风刻
-        # 门前清
-        if times.is_menqianqing(data):
+        if '门前清' not in excludes and times.is_menqianqing(data):
             score += 2
-        # 平和
-        if times.is_pinghe(data):
+            includes.append('门前清')
+        if '平和' not in excludes and times.is_pinghe(data):
             score += 2
-        # 四归一
-        if times.is_shuanganke(data):
+            includes.append('平和')
+        if '双暗刻' not in excludes and times.is_shuanganke(data):
             score += 2
-        if times.is_angang(data):
+            includes.append('双暗刻')
+        if '暗杠' not in excludes and times.is_angang(data):
             score += 2
-        if times.is_duan19(data):
+            includes.append('暗杠')
+        if '断幺九' not in excludes and times.is_duan19(data):
             score += 2
+            includes.append('断幺九')
 
         ########################### 1 番 ##################
-        # 二五八万
-        if times.is_258wan(data):
+        if '二五八万' not in excludes and times.is_258wan(data):
             score += 1
+            includes.append('二五八万')
         # 幺九头
         # TODO
 
         # 报听
-        # 一般高
-        if times.is_yibangao(data):
+        if '一般高' not in excludes and times.is_yibangao(data):
             score += 1
-        # 连六
-        if times.is_lian6(data):
+            includes.append('一般高')
+        if '连六' not in excludes and times.is_lian6(data):
             score += 1
-        # 老少副
-        if times.is_laoshaofu(data):
+            includes.append('连六')
+        if '老少副' not in excludes and times.is_laoshaofu(data):
             score += 1
-        # 幺九刻
-        if times.is_yaojiuke(data):
+            includes.append('老少副')
+        if '幺九刻' not in excludes and times.is_yaojiuke(data):
             score += 1
-        # 明杠
-        if times.is_minggang(data):
+            includes.append('幺九刻')
+        if '明杠' not in excludes and times.is_minggang(data):
             score += 1
-        # 边张
-        # 坎张
-        # 单调将
-        if times.is_dandiaojiang(data):
+            includes.append('明杠')
+        if '坎张' not in excludes and times.is_kanzhang(data, self.new_pai):
             score += 1
+            includes.append('坎张')
+            excludes.extend(['边张'])
+        if '边张' not in excludes and times.is_bianzhang(data, self.new_pai, self.dynamic_pais):
+            score += 1
+            includes.append('边张')
+        if '单钓' not in excludes and times.is_dandiaojiang(data):
+            score += 1
+            includes.append('单钓')
+        if '自摸' not in excludes and self.zimo:
+            score += 1
+            includes.append('自摸')
 
-        # 自摸
-        if self.zimo:
-            score += 1
-
-        return score
+        return score, includes
