@@ -17,46 +17,40 @@ class DeepPlayer:
         self.name = None
         self.fanzhong = None  # 胡牌的番种
 
-    def chupai_process(self):
+    def jingpai_process(self, index):
         """
-        AI 出牌，能胡就胡能碰就碰能杠就杠能吃就吃，这个地方到时可以换成深度学习动作
+        使用深度学习确定动作，吃、碰、杠、胡、摸牌
+        index：0 吃 1：碰 2：杠 3：胡 4：摸
         """
-        
-        # 使用当前牌局作为输入
-        # 蒙特卡罗搜索树获取值作为奖励
-        # 可选取的动作有，吃、碰、杠、摸、胡
-        # TODO
 
-        # 如果对家还没有出牌，直接摸牌
-        if self.oppo_pai is None:
+        # 还没有摸牌，新的牌是对手出的牌
+        self.new_pai = self.oppo_pai
+        self.zimo = False
+
+        # 确定奖励值
+        reward = list([])
+        reward.append(1 if self.is_chi() else -1)
+        reward.append(1 if self.is_peng() else -1)
+        reward.append(1 if self.is_gang() else -1)
+        reward.append(100 if self.is_hu() else -1)
+        reward.append(1)
+
+        # 对手还没出牌，只能执行摸牌动作，否则结束游戏
+        if index == 0 and self.oppo_pai is not None and self.is_chi():
+            self.chi()
+        elif index == 1 and self.oppo_pai is not None and self.is_peng():
+            self.peng()
+        elif index == 2 and self.oppo_pai is not None and self.is_gang():
+            self.gang()
+            self.mopai()  # 杠完之后还要摸牌
+        elif index == 3 and self.oppo_pai is not None and self.is_hu():
+            self.game.finished = True
+        elif index == 4:
             self.mopai()
-
-        # 使用对家出的牌进行胡、碰、杠或自己摸牌
         else:
-            self.new_pai = self.oppo_pai
-            self.zimo = False
+            self.game.finished = True
 
-            if self.is_hu():  # 胡，游戏结束
-                self.game.finished = True
-                return
-            elif self.is_gang():  # 杠
-                self.gang()
-                self.mopai()  # 杠完之后还要摸牌
-            elif self.is_peng():  # 碰
-                self.peng()
-            elif self.is_chi():  # 吃
-                self.chi()
-            else:  # 摸牌
-                self.mopai()
-
-        # 不是胡牌或流局就必须出牌
-        if not self.game.finished:
-            pai = self.chu_pai()
-            self.output_pais.append(pai)
-
-            return pai
-
-        return None
+        return reward
 
     def mopai(self):
         """
@@ -307,7 +301,7 @@ class DeepPlayer:
 
                 pai[i] += 2
 
-    def chu_pai(self):
+    def chupai_process(self):
         """
         TODO
         出牌逻辑，这部分待优化，出单牌，没有单牌出第一张牌
