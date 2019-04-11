@@ -50,7 +50,15 @@ def main():
 
     last_cp_status, last_cp_actions, last_cp_reward = None, None, None
     last_jp_status, last_jp_actions, last_cp_reward = None, None, None
+
+    count = 0
+    success = 0
     while True:
+
+        if count == 10000:
+            count = 0
+            success = 0
+
         # 牌局已结束，重新开始游戏
         if paiju.finished:
             paiju, ai_player, deep_player, turn = init_paju()
@@ -70,7 +78,7 @@ def main():
 
             # 当前状态输入到神经网络，得到动作，执行得到动作结果状态和回报
             jp_actions = np.zeros([5])
-            if len(memory_jp) < 2000:
+            if len(memory_jp) < 500:
                 jp_actions[random.randrange(5)] = 1
             else:
                 jp_readout_ = jp_readout.eval(feed_dict={pj_status: [jp_status]})[0]
@@ -82,6 +90,12 @@ def main():
 
             # 执行结果得到奖励
             jp_reward = deep_player.jingpai_process(jp_action_index)
+
+            count += 1
+            if jp_reward > 0:
+                success += 1
+
+            print("总共：", count, "成功：", success)
 
             # 结合上一次状态存入记忆列表
             if last_jp_status is not None:
@@ -101,7 +115,7 @@ def main():
 
                 # 刚开始的时候随机获取动作
                 cp_actions = np.zeros([16])
-                if len(memory_jp) < 2000:
+                if len(memory_jp) < 500:
                     cp_actions[random.randrange(16)] = 1
                 else:
                     cp_readout_ = cp_readout.eval(feed_dict={pj_status: [cp_status]})[0]
@@ -126,7 +140,7 @@ def main():
                     ai_player.oppo_pai = pai
 
         # 训练进牌网络
-        if len(memory_cp) > 2000 and len(memory_jp) > 2000:
+        if len(memory_cp) > 500 and len(memory_jp) > 500:
             minibatch = random.sample(memory_jp, BATCH)
 
             s_j_batch = [d[0] for d in minibatch]
@@ -148,15 +162,7 @@ def main():
             jp_train_step.run(feed_dict={jp_y: y_batch, jp_a: a_batch, pj_status: s_j_batch})
 
         # 训练出牌网络
-        if deep_player.score > 0:
-            print("玩家 2 赢了")
-
-        if len(memory_cp) == REPLAY_MEMORY - 1:
-            print("开始训练了")
-        else:
-            print(len(memory_cp))
-
-        if len(memory_cp) > 2000 and len(memory_jp) > 2000:
+        if len(memory_cp) > 500 and len(memory_jp) > 500:
             minibatch = random.sample(memory_cp, BATCH)
 
             s_j_batch = [d[0] for d in minibatch]
