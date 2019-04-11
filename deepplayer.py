@@ -27,27 +27,26 @@ class DeepPlayer:
         self.new_pai = self.oppo_pai
         self.zimo = False
 
-        # 确定奖励值
-        reward = list([])
-        reward.append(1 if self.is_chi() else -1)
-        reward.append(1 if self.is_peng() else -1)
-        reward.append(1 if self.is_gang() else -1)
-        reward.append(100 if self.is_hu() else -1)
-        reward.append(1)
-
         # 对手还没出牌，只能执行摸牌动作，否则结束游戏
+        reward = 0
         if index == 0 and self.oppo_pai is not None and self.is_chi():
             self.chi()
+            reward = 1
         elif index == 1 and self.oppo_pai is not None and self.is_peng():
             self.peng()
+            reward = 1
         elif index == 2 and self.oppo_pai is not None and self.is_gang():
             self.gang()
             self.mopai()  # 杠完之后还要摸牌
+            reward = 1
         elif index == 3 and self.oppo_pai is not None and self.is_hu():
             self.game.finished = True
+            reward = 10
         elif index == 4:
             self.mopai()
+            reward = 0
         else:
+            reward = -10
             self.game.finished = True
 
         return reward
@@ -220,7 +219,7 @@ class DeepPlayer:
                     total_score, fanzhong = self.cal_score(d)
                     if total_score > self.score:
                         self.score = total_score
-                        self.data = d
+                        # self.data = d
                         self.fanzhong = fanzhong
 
                 pai_count[i] += 2
@@ -301,24 +300,43 @@ class DeepPlayer:
 
                 pai[i] += 2
 
-    def chupai_process(self):
+    def chupai_process(self, index):
         """
-        TODO
         出牌逻辑，这部分待优化，出单牌，没有单牌出第一张牌
+        index: 代表在出牌序列 1 - 16 的索引，比如： 0 代表 一万， 1 代表 二万
         """
 
-        # 没有单牌，默认出第一个牌
-        pai = self.dynamic_pais[0]
+        # 计算出 1- 16 每张牌的奖励值, 17 表示当前是进牌阶段
+        # rewards = [self.cal_cp_reward(self.dynamic_pais, i) for i in range(1, 17)]
 
-        pai_count = collections.Counter(self.dynamic_pais)
-        for (k, v) in pai_count.items():
-            if v == 1:
-                pai = k
-                break
+        # 没有这张牌游戏结束，否则出牌
+        pai = index + 1
+        if pai not in self.dynamic_pais:
+            self.game.finished = True
+            reward = -10
+        elif self.dynamic_pais.count(pai) >= 2:
+            self.dynamic_pais.remove(pai)
+            reward = -1
+        else:
+            self.dynamic_pais.remove(pai)
+            reward = 1
 
-        self.dynamic_pais.remove(pai)
+        return pai, reward
 
-        return pai
+    def cal_cp_reward(self, pais, pai):
+        """
+        计算出牌的奖励值
+        
+        :param pais: 手上的牌
+        :param pai:  出的牌
+        """
+
+        # 没有这张牌
+        if pai not in pais:
+            return -10
+
+        # 牌的数量大于 2 返回 -1，否则单牌返回 1
+        return -1 if pais.count(pai) >= 2 else 1
 
     def cal_score(self, data):
         """

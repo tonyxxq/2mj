@@ -220,7 +220,7 @@ class AiPlayer:
                     total_score, fanzhong = self.cal_score(d)
                     if total_score > self.score:
                         self.score = total_score
-                        self.data = d
+                        # self.data = d
                         self.fanzhong = fanzhong
 
                 pai_count[i] += 2

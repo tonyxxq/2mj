@@ -2,7 +2,6 @@
 from __future__ import print_function
 
 import tensorflow as tf
-
 import random
 import numpy as np
 from collections import deque
@@ -29,8 +28,8 @@ def bias_variable(shape):
     return tf.Variable(initial)
 
 
-def conv2d(x, W, stride):
-    return tf.nn.conv2d(x, W, strides=[1, stride, stride, 1], padding="SAME")
+def conv2d(x, w, stride):
+    return tf.nn.conv2d(x, w, strides=[1, stride, stride, 1], padding="SAME")
 
 
 def max_pool_2x2(x):
