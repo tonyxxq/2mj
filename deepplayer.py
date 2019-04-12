@@ -44,9 +44,9 @@ class DeepPlayer:
             reward = 10
         elif index == 4:
             self.mopai()
-            reward = 0
+            reward = 1
         else:
-            reward = -10
+            reward = -1
             self.game.finished = True
 
         return reward

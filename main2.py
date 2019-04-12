@@ -13,7 +13,7 @@ GAME = '2mj'  # the name of the game being played for log files
 GAMMA = 0.99  # decay rate of past observations
 OBSERVE = 100000.  # timesteps to observe before training
 EPSILON = 0.001  # final value of epsilon
-REPLAY_MEMORY = 200  # number of previous transitions to remember
+REPLAY_MEMORY = 5000  # number of previous transitions to remember
 BATCH = 64  # size of minibatch
 
 
@@ -46,6 +46,13 @@ def main():
 
     sess = tf.InteractiveSession()
     sess.run(tf.global_variables_initializer())
+
+    saver = tf.train.Saver()
+
+    # 加载已经训练好的参数
+    checkpoint = tf.train.get_checkpoint_state("saved_networks")
+    if checkpoint and checkpoint.model_checkpoint_path:
+        saver.restore(sess, checkpoint.model_checkpoint_path)
 
     print("创建网络完成")
 
@@ -87,7 +94,7 @@ def main():
             count_jp += 1
 
             if count_jp % 200 == 0:
-                print("进牌总次数：", count_jp, "总奖励值：", jp_all_reward)
+                print("进牌总次数：", count_jp, "该批次奖励值：", jp_all_reward)
                 jp_all_reward = 0
             else:
                 jp_all_reward += jp_reward
@@ -100,7 +107,7 @@ def main():
             if not paiju.finished:
                 # 出牌状态输入到神经网络获取行动，并进行一些探索
                 cp_readout_ = cp_readout.eval(feed_dict={cp_s: [cp_status]})[0]
-                cp_action_index = np.argmax(cp_readout_) if random.random() > EPSILON else random.randrange(17)
+                cp_action_index = np.argmax(cp_readout_) if random.random() > EPSILON else random.randrange(16)
 
                 # 转化为 one hot
                 cp_actions = np.zeros([16])
@@ -112,12 +119,10 @@ def main():
                 count_cp += 1
 
                 if count_cp % 200 == 0:
-                    print("出牌总次数：", count_cp, "总奖励值：", cp_all_reward)
+                    print("出牌总次数：", count_cp, "该批次奖励值：", cp_all_reward)
                     cp_all_reward = 0
                 else:
                     cp_all_reward += cp_reward
-
-                jp_reward += cp_reward
 
                 # 牌局结束直接保存状态，因为没有下一个状态了，否则等对家出完牌才知道
                 if paiju.finished:
@@ -126,47 +131,54 @@ def main():
                     last_cp_status, last_cp_actions, last_cp_reward = cp_status, cp_actions, cp_reward
                     ai_player.oppo_pai = pai
 
-        # 训练进牌网络
-        if len(memory_jp) >= REPLAY_MEMORY:
-            # 从进牌记忆数据中随机抽取一个批次的训练数据
-            jp_batch = random.sample(memory_jp, BATCH)
+            # 训练进牌网络
+            if len(memory_jp) >= REPLAY_MEMORY:
+                # 从进牌记忆数据中随机抽取一个批次的训练数据
+                jp_batch = random.sample(memory_jp, BATCH)
 
-            jp_s_ = [d[0] for d in jp_batch]
-            jp_a_ = [d[1] for d in jp_batch]
+                jp_s_ = [d[0] for d in jp_batch]
+                jp_a_ = [d[1] for d in jp_batch]
 
-            # 计算 Q 值
-            jp_y_ = []
-            for r in jp_batch:
-                terminal = r[4]
-                if terminal:
-                    jp_y_.append(r[2])
-                else:
-                    # 把状态输入给出牌网络，获取 Q 值
-                    cp_readout_ = cp_readout.eval(feed_dict={cp_s: [r[3]]})
-                    jp_y_.append(r[2] + GAMMA * np.max(cp_readout_))
+                # 计算 Q 值
+                jp_y_ = []
+                for r in jp_batch:
+                    terminal = r[4]
+                    if terminal:
+                        jp_y_.append(r[2])
+                    else:
+                        # 把状态输入给出牌网络，获取 Q 值
+                        cp_readout_ = cp_readout.eval(feed_dict={cp_s: [r[3]]})
+                        jp_y_.append(r[2] + GAMMA * np.max(cp_readout_))
 
-            jp_train_step.run(feed_dict={jp_s: jp_s_, jp_a: jp_a_, jp_y: jp_y_})
+                jp_train_step.run(feed_dict={jp_s: jp_s_, jp_a: jp_a_, jp_y: jp_y_})
 
-        # 训练出牌网络
-        if len(memory_cp) >= REPLAY_MEMORY:
-            # 从出牌记忆数据中随机抽取一个批次的训练数据
-            cp_batch = np.array(random.sample(memory_cp, BATCH))
+            # 训练出牌网络
+            if len(memory_cp) >= REPLAY_MEMORY:
+                # 从出牌记忆数据中随机抽取一个批次的训练数据
+                cp_batch = np.array(random.sample(memory_cp, BATCH))
 
-            cp_s_ = [d[0] for d in cp_batch]
-            cp_a_ = [d[1] for d in cp_batch]
+                cp_s_ = [d[0] for d in cp_batch]
+                cp_a_ = [d[1] for d in cp_batch]
 
-            # 计算 Q 值
-            cp_y_ = []
-            for r in cp_batch:
-                terminal = r[4]
-                if terminal:
-                    cp_y_.append(r[2])
-                else:
-                    # 把状态输入给出牌网络，获取 Q 值
-                    jp_readout_ = jp_readout.eval(feed_dict={jp_s: [r[3]]})
-                    cp_y_.append(r[2] + GAMMA * np.max(jp_readout_))
+                # 计算 Q 值
+                cp_y_ = []
+                for r in cp_batch:
+                    terminal = r[4]
+                    if terminal:
+                        cp_y_.append(r[2])
+                    else:
+                        # 把状态输入给出牌网络，获取 Q 值
+                        jp_readout_ = jp_readout.eval(feed_dict={jp_s: [r[3]]})
+                        cp_y_.append(r[2] + GAMMA * np.max(jp_readout_))
 
-            cp_train_step.run(feed_dict={cp_s: cp_s_, cp_a: cp_a_, cp_y: cp_y_})
+                cp_train_step.run(feed_dict={cp_s: cp_s_, cp_a: cp_a_, cp_y: cp_y_})
+
+            # 存储权重
+            if count_jp % 10000 == 0:
+                saver.save(sess, 'saved_networks/' + GAME + 'jp-dqn', global_step=count_jp)
+
+            if count_cp % 10000 == 0:
+                saver.save(sess, 'saved_networks/' + GAME + 'cp-dqn', global_step=count_cp)
 
         # 切换下家出牌
         turn = not turn
