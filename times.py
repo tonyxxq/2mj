@@ -1,3 +1,6 @@
+# -*- coding:UTF-8 -*-
+
+
 def count_pais_by_types_and_range(data={}, types=[], bein=0, end=0):
     """
     计算指定类型的牌组合（比如刻子、杠等）包含指定范围牌的数量，在计算番数的时候用

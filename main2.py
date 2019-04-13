@@ -1,3 +1,5 @@
+# -*- coding:UTF-8 -*-
+
 import random
 from game import Game
 from deepplayer import DeepPlayer
