@@ -1,5 +1,3 @@
-# -*- coding:UTF-8 -*-
-
 import copy
 import collections
 import times
@@ -19,47 +17,39 @@ class DeepPlayer:
         self.name = None
         self.fanzhong = None  # 胡牌的番种
 
-    def chupai_process(self):
+    def jingpai_process(self, index):
         """
-        AI 出牌，能胡就胡能碰就碰能杠就杠能吃就吃，这个地方到时可以换成深度学习动作
+        使用深度学习确定动作，吃、碰、杠、胡、摸牌
+        index：0 吃 1：碰 2：杠 3：胡 4：摸
         """
-        
-        # 使用当前牌局作为输入
-        # 蒙特卡罗搜索树获取值作为奖励
-        # 可选取的动作有，吃、碰、杠、摸、胡
-        # 通过网络选错动作就结束
-        # TODO
 
-        # 如果对家还没有出牌，直接摸牌
-        if self.oppo_pai is None:
+        # 还没有摸牌，新的牌是对手出的牌
+        self.new_pai = self.oppo_pai
+        self.zimo = False
+
+        # 对手还没出牌，只能执行摸牌动作，否则结束游戏
+        reward = 0
+        if index == 0 and self.oppo_pai is not None and self.is_chi():
+            self.chi()
+            reward = 1
+        elif index == 1 and self.oppo_pai is not None and self.is_peng():
+            self.peng()
+            reward = 1
+        elif index == 2 and self.oppo_pai is not None and self.is_gang():
+            self.gang()
+            self.mopai()  # 杠完之后还要摸牌
+            reward = 1
+        elif index == 3 and self.oppo_pai is not None and self.is_hu():
+            self.game.finished = True
+            reward = 10
+        elif index == 4:
             self.mopai()
-
-        # 使用对家出的牌进行胡、碰、杠或自己摸牌
+            reward = 1
         else:
-            self.new_pai = self.oppo_pai
-            self.zimo = False
+            reward = -1
+            self.game.finished = True
 
-            if self.is_hu():  # 胡，游戏结束
-                self.game.finished = True
-                return
-            elif self.is_gang():  # 杠
-                self.gang()
-                self.mopai()  # 杠完之后还要摸牌
-            elif self.is_peng():  # 碰
-                self.peng()
-            elif self.is_chi():  # 吃
-                self.chi()
-            else:  # 摸牌
-                self.mopai()
-
-        # 不是胡牌或流局就必须出牌
-        if not self.game.finished:
-            pai = self.chu_pai()
-            self.output_pais.append(pai)
-
-            return pai
-
-        return None
+        return reward
 
     def mopai(self):
         """
@@ -229,7 +219,7 @@ class DeepPlayer:
                     total_score, fanzhong = self.cal_score(d)
                     if total_score > self.score:
                         self.score = total_score
-                        self.data = d
+                        # self.data = d
                         self.fanzhong = fanzhong
 
                 pai_count[i] += 2
@@ -310,24 +300,43 @@ class DeepPlayer:
 
                 pai[i] += 2
 
-    def chu_pai(self):
+    def chupai_process(self, index):
         """
-        TODO
         出牌逻辑，这部分待优化，出单牌，没有单牌出第一张牌
+        index: 代表在出牌序列 1 - 16 的索引，比如： 0 代表 一万， 1 代表 二万
         """
 
-        # 没有单牌，默认出第一个牌
-        pai = self.dynamic_pais[0]
+        # 计算出 1- 16 每张牌的奖励值, 17 表示当前是进牌阶段
+        # rewards = [self.cal_cp_reward(self.dynamic_pais, i) for i in range(1, 17)]
 
-        pai_count = collections.Counter(self.dynamic_pais)
-        for (k, v) in pai_count.items():
-            if v == 1:
-                pai = k
-                break
+        # 没有这张牌游戏结束，否则出牌
+        pai = index + 1
+        if pai not in self.dynamic_pais:
+            self.game.finished = True
+            reward = -10
+        elif self.dynamic_pais.count(pai) >= 2:
+            self.dynamic_pais.remove(pai)
+            reward = -1
+        else:
+            self.dynamic_pais.remove(pai)
+            reward = 1
 
-        self.dynamic_pais.remove(pai)
+        return pai, reward
 
-        return pai
+    def cal_cp_reward(self, pais, pai):
+        """
+        计算出牌的奖励值
+        
+        :param pais: 手上的牌
+        :param pai:  出的牌
+        """
+
+        # 没有这张牌
+        if pai not in pais:
+            return -10
+
+        # 牌的数量大于 2 返回 -1，否则单牌返回 1
+        return -1 if pais.count(pai) >= 2 else 1
 
     def cal_score(self, data):
         """
