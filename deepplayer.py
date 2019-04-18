@@ -31,20 +31,16 @@ class DeepPlayer:
         reward = 0
         if index == 0 and self.oppo_pai is not None and self.is_chi():
             self.chi()
-            reward = 1
         elif index == 1 and self.oppo_pai is not None and self.is_peng():
             self.peng()
-            reward = 1
         elif index == 2 and self.oppo_pai is not None and self.is_gang():
             self.gang()
             self.mopai()  # 杠完之后还要摸牌
-            reward = 1
         elif index == 3 and self.oppo_pai is not None and self.is_hu():
             self.game.finished = True
-            reward = 10
+            reward = self.score  # 奖励就是自己的得分
         elif index == 4:
             self.mopai()
-            reward = 1
         else:
             reward = -1
             self.game.finished = True
