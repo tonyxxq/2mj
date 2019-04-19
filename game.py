@@ -33,7 +33,7 @@ class Game:
         """
         首次发牌，一共 13 张
         """
-        return [self.pais.pop() for i in range(0, 13)]
+        return sorted([self.pais.pop() for i in range(0, 13)])
 
     def num2Str(self, tiles):
         """
