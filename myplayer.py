@@ -30,6 +30,8 @@ class MyPlayer:
             self.new_pai = self.oppo_pai
             self.zimo = False
 
+            print(list(map(lambda p: self.game.type_pais[p], sorted(self.dynamic_pais))))
+
             # 判断吃、碰、杠、胡动作，供用户选择
             for sunzi in self.is_chi():
                 print('吃 ', sunzi[0], "  ", sunzi[1:])
