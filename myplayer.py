@@ -1,11 +1,13 @@
+# -*- coding:UTF-8 -*-
+
+
 import copy
 import collections
 import times
-import time
 
 
-class WSPlayer:
-    def __init__(self, my_pais, game, ws):
+class MyPlayer:
+    def __init__(self, my_pais, game):
         self.new_pai = None  # 我新进的最新一张牌，可能是自己摸的或
         self.oppo_pai = None  # 我新进的最新一张牌，可能是自己摸的或
         self.zimo = False  # True 新牌是自己摸的牌 False:碰、胡、杠、吃的对家的牌
@@ -17,62 +19,59 @@ class WSPlayer:
         self.game = game  # 当前牌局
         self.name = None
         self.fanzhong = None  # 胡牌的番种
-        self.ws = ws  # websocket
-        self.last_chupai = None
 
-    def chupai_process(self, ws):
+    def chupai_process(self):
         # 如果对家还没有出牌，直接摸牌
         if self.oppo_pai is None:
             self.mopai()
+
+        # 使用对家出的牌进行胡、碰、杠或自己摸牌
         else:
             self.new_pai = self.oppo_pai
             self.zimo = False
 
-            # 胡，游戏结束
+            # 判断吃、碰、杠、胡动作，供用户选择
+            for index, sunzi in enumerate(self.is_chi()):
+                # print('吃 ', sunzi)
+                pass
+
+            if self.is_peng():
+                print("碰")
+
+            if self.is_gang():
+                print("杠")
+
             if self.is_hu():
+                print("胡")
+
+            # 获取用户选择的动作
+            action = input("请输入动作，回车摸牌：")
+
+            if action == '胡':
                 self.game.finished = True
                 return
+            elif action == '碰':
+                self.peng()
+            elif action == '杠':
+                self.gang()
+                self.mopai()  # 杠完之后还要摸牌
+            elif "吃" in action:
+                # chi_pais = list(map(int, action.split(" ")[1]))
+                pass
+            else:
+                self.mopai()
 
-            data = []
-
-            pais = self.game.num2Str(self.dynamic_pais)
-
-            if self.is_gang():  # 杠
-                data.append({'type': 2, 'card': self.game.type_pais[self.new_pai], 'originCards': pais})
-
-            if self.is_peng():  # 碰
-                data.append({'type': 1, 'card': self.game.type_pais[self.new_pai], 'originCards': pais})
-            # elif self.is_chi():  # 吃 TODO 暂时未处理
-            #     self.chi()
-
-            # 原始牌型
-            data.append({'type': 0, 'card': self.game.type_pais[self.new_pai], 'originCards': pais})
-
-            # 发送到后端进行动作评估
-            ws.send(str(data))
-            ws.received_message = self.jin_pai
-
-        time.sleep(2)
         # 不是胡牌或流局就必须出牌
+        print(list(map(lambda p: self.game.type_pais[p], sorted(self.dynamic_pais))))
+
         if not self.game.finished:
-            pai = self.chu_pai(ws)
+            pai = self.chu_pai()
             self.output_pais.append(pai)
+            print(list(map(lambda p: self.game.type_pais[p], sorted(self.dynamic_pais))))
 
             return pai
 
         return None
-
-    def jin_pai(self, t):
-        """
-        判断执行，胡、碰、杠
-        """
-        if t == 2:  # 杠
-            self.gang()
-            self.mopai()  # 杠完之后还要摸牌
-        elif t == 1:  # 碰
-            self.peng()
-        elif t == 0:  # 摸牌
-            self.mopai()
 
     def mopai(self):
         """
@@ -86,18 +85,24 @@ class WSPlayer:
             return
         else:
             pai = self.game.mopai()  # 摸牌
+            print("摸到牌：", self.game.type_pais[pai])
             self.new_pai = pai
             self.zimo = True  # 表示是自己摸的牌
 
-            if self.is_hu():  # 能胡就胡
+            if self.is_hu():  # 自摸
                 self.game.finished = True
+                print("自摸")
                 return
-            elif self.is_gang():  # 能杠就杠，杠完再摸牌
-                self.gang()
-                self.mopai()
-            else:  # 否则摸牌
-                self.dynamic_pais.append(pai)
-                return pai
+
+            # if self.is_gang():
+            #     action = input('是否杠？请输入：y 或 n')
+            #
+            # if action == 'y':
+            #     self.gang()
+            #     self.mopai()
+
+            self.dynamic_pais.append(pai)
+            return pai
 
     def is_peng(self):
         """
@@ -117,36 +122,36 @@ class WSPlayer:
         判断是否可以吃对家出的牌
         """
 
+        result = []
+
         # 如果当前手上的牌的数量小于等于 2 不能吃牌
         if len(self.dynamic_pais) <= 2:
-            return False
+            return result
 
         if self.oppo_pai <= 9 and self.oppo_pai - 2 in self.dynamic_pais and self.oppo_pai - 1 in self.dynamic_pais:
-            return True
-        elif self.oppo_pai <= 8 and self.oppo_pai - 1 in self.dynamic_pais and self.oppo_pai + 1 in self.dynamic_pais:
-            return True
-        elif self.oppo_pai <= 7 and self.oppo_pai + 1 in self.dynamic_pais and self.oppo_pai + 2 in self.dynamic_pais:
-            return True
-        return False
+            result.append([self.oppo_pai - 2, self.oppo_pai - 1, self.oppo_pai])
+        if self.oppo_pai <= 8 and self.oppo_pai - 1 in self.dynamic_pais and self.oppo_pai + 1 in self.dynamic_pais:
+            result.append([self.oppo_pai - 1, self.oppo_pai, self.oppo_pai + 1])
+        if self.oppo_pai <= 7 and self.oppo_pai + 1 in self.dynamic_pais and self.oppo_pai + 2 in self.dynamic_pais:
+            result.append([self.oppo_pai, self.oppo_pai + 1, self.oppo_pai + 2])
+        return result
 
-    def chi(self):
+    def chi(self, pais):
         """
         吃牌且把相关牌从动态牌面中移除，添加到静态牌面
         """
 
-        pai = self.oppo_pai
-        if pai <= 9 and pai - 2 in self.dynamic_pais and pai - 1 in self.dynamic_pais:
-            self.data['sunzi'][pai - 2] = {'times': self.get_times_by_type('sunzi', pai - 2) + 1, 'zimo': False}
-            self.dynamic_pais.remove(pai - 1)
-            self.dynamic_pais.remove(pai - 2)
-        elif pai <= 8 and pai - 1 in self.dynamic_pais and pai + 1 in self.dynamic_pais:
-            self.data['sunzi'][pai - 1] = {'times': self.get_times_by_type('sunzi', pai - 1) + 1, 'zimo': False}
-            self.dynamic_pais.remove(pai - 1)
-            self.dynamic_pais.remove(pai + 1)
-        elif pai <= 7 and pai + 1 in self.dynamic_pais and pai + 2 in self.dynamic_pais:
-            self.data['sunzi'][pai] = {'times': self.get_times_by_type('sunzi', pai) + 1, 'zimo': False}
-            self.dynamic_pais.remove(pai + 1)
-            self.dynamic_pais.remove(pai + 2)
+        index = pais.index(self.oppo_pai)
+        self.data['sunzi'][pais[0]] = {'times': self.get_times_by_type('sunzi', pais[0]) + 1, 'zimo': False}
+        if index == 0:
+            self.dynamic_pais.remove(pais[1])
+            self.dynamic_pais.remove(pais[2])
+        elif index == 1:
+            self.dynamic_pais.remove(pais[0])
+            self.dynamic_pais.remove(pais[2])
+        elif index == 2:
+            self.dynamic_pais.remove(pais[0])
+            self.dynamic_pais.remove(pais[1])
 
     def is_gang(self):
         """
@@ -202,14 +207,13 @@ class WSPlayer:
         count = 0
         for p in pais[:]:
             if p == pai and count < num:
-                pais.remove(pai)
+                pais.remove(p)
                 count += 1
 
     def is_hu(self):
         """
         判断是否可以胡牌，牌可以是自己摸的牌或胡对家的牌, 计算每一种胡牌的可能的排列组合
         """
-
         # 加上 new_pai 判断,计算每个动态牌出现的次数
         dynamic_pais = copy.deepcopy(self.dynamic_pais)
         dynamic_pais.append(self.new_pai)
@@ -244,7 +248,7 @@ class WSPlayer:
                     total_score, fanzhong = self.cal_score(d)
                     if total_score > self.score:
                         self.score = total_score
-                        self.data = d
+                        # self.data = d
                         self.fanzhong = fanzhong
 
                 pai_count[i] += 2
@@ -325,23 +329,15 @@ class WSPlayer:
 
                 pai[i] += 2
 
-    def chu_pai(self, ws):
-        # 发送当前的牌面到后台进行出牌计算
-        pais = self.game.num2Str(self.dynamic_pais)
-        data = [{'type': 4, 'card': self.game.type_pais[self.new_pai], 'originCards': pais}]
-        ws.send(str(data))
-        ws.received_message = self.remove_dynamic_pai
-
-        return self.last_chupai
-
-    def remove_dynamic_pai(self, pai):
+    def chu_pai(self):
         """
-        动态牌中移除指定的牌
+        出牌逻辑，这部分待优化，出单牌，没有单牌出第一张牌
         """
-        pai = str(pai)
-        pai = str.split(pai, ',')[0]
-        self.dynamic_pais.remove(self.game.pai_types[pai])
-        self.last_chupai = self.game.pai_types[pai]
+        pai = input("请输入所要出的牌：")
+        pai = self.game.pai_types[pai]
+        self.dynamic_pais.remove(pai)
+
+        return pai
 
     def cal_score(self, data):
         """
