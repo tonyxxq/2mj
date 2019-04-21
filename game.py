@@ -9,7 +9,7 @@ class Game:
         # 一共有多少种类型的牌
         self.pai_types = {'1万': 1, '2万': 2, '3万': 3, '4万': 4, '5万': 5, '6万': 6, '7万': 7,
                           '8万': 8, '9万': 9, '东': 10, '南': 11, '西': 12, '北': 13,
-                          '白': 14, '发': 15, '中': 16}
+                          '中': 14, '发': 15, '白': 16}
         self.type_pais = {item[1]: item[0] for item in self.pai_types.items()}
         self.pais = self.gengerate_pais()  # 生成一副牌
         self.finished = False  # 结束，有人胡或没有牌了
