@@ -34,42 +34,50 @@ public class AIServer extends WebSocketServer {
     @Override
     public void onMessage(WebSocket conn, String message) {
         System.out.println("收到了消息：" + message);
-
-
         List<Integer> gui = new ArrayList<>();
-
-
         List<Majiangs> majiangs = JSONObject.parseArray(message, Majiangs.class);
 
         double score = 0.0;
         int type = Majiangs.TYPE_ORIGIN;
         for (Majiangs mj : majiangs) {
             List<Integer> cards = MaJiangDef.stringToCards(mj.getOriginCards());
+            Integer card = MaJiangDef.stringToCards(mj.getCard()).get(0);
             if (mj.getType() == Majiangs.TYPE_OUT) { // 出牌
                 int out = AIUtil.outAI(cards, gui);
                 List<Integer> result = new ArrayList<>();
                 result.add(out);
                 conn.send(MaJiangDef.cardsToString(result) + ""); //  出牌和其他不兼容
                 System.out.println("输出的是: " + MaJiangDef.cardsToString(result));
-                break;
+                return;
             } else if (mj.getType() == Majiangs.TYPE_PENG) { // 碰
-                double pengScore = AIUtil.pengAIScore(cards, gui, Integer.parseInt(mj.getCard()), 1.0);
+                double pengScore = AIUtil.pengAIScore(cards, gui, card, 1.0);
                 if (pengScore > score) {
+                    score = pengScore;
                     type = Majiangs.TYPE_PENG;
                 }
             } else if (mj.getType() == Majiangs.TYPE_GANG) { // 杠
-                double gangScore = AIUtil.gangAIScore(cards, gui, Integer.parseInt(mj.getCard()), 1.0);
+                double gangScore = AIUtil.gangAIScore(cards, gui, card, 1.0);
                 if (gangScore > score) {
+                    score = gangScore;
                     type = Majiangs.TYPE_GANG;
                 }
-            } else if (mj.getType() == Majiangs.TYPE_ORIGIN) { // 杠
+            } else if (mj.getType() == Majiangs.TYPE_ORIGIN) { // 原始
                 double originScore = AIUtil.calc(cards, gui);
                 if (originScore > score) {
+                    score = originScore;
                     type = Majiangs.TYPE_ORIGIN;
+                }
+            } else if (mj.getType() == Majiangs.TYPE_CHI_1 || mj.getType() == Majiangs.TYPE_CHI_2 || mj.getType() == Majiangs.TYPE_CHI_3) { // 吃
+                Integer card1 = MaJiangDef.stringToCards(mj.getCard1()).get(0);
+                Integer card2 = MaJiangDef.stringToCards(mj.getCard2()).get(0);
+                double chiScore = AIUtil.chiAIScore(cards, gui, card, card1, card2);
+                if (chiScore > score) {
+                    score = chiScore;
+                    type = mj.getType();
                 }
             }
         }
-        conn.send( type + "");
+        conn.send(type + "");
     }
 
     @Override

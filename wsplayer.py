@@ -31,22 +31,31 @@ class WSPlayer:
             # 胡，游戏结束
             if self.is_hu():
                 self.game.finished = True
+                print("对家胡了")
                 return
 
             data = []
 
             pais = self.game.num2Str(self.dynamic_pais)
 
-            if self.is_gang():  # 杠
-                data.append({'type': 2, 'card': self.game.type_pais[self.new_pai], 'originCards': pais})
+            # 原始牌型
+            data.append({'type': 0, 'card': self.game.type_pais[self.new_pai], 'originCards': pais})
 
             if self.is_peng():  # 碰
                 data.append({'type': 1, 'card': self.game.type_pais[self.new_pai], 'originCards': pais})
-            # elif self.is_chi():  # 吃 TODO 暂时未处理
-            #     self.chi()
 
-            # 原始牌型
-            data.append({'type': 0, 'card': self.game.type_pais[self.new_pai], 'originCards': pais})
+            if self.is_gang():  # 杠
+                data.append({'type': 2, 'card': self.game.type_pais[self.new_pai], 'originCards': pais})
+
+            chi_pais = self.is_chi()  # 吃牌的排列组合
+            for chi_pai in chi_pais:
+                data.append({
+                    'type': chi_pai[0],
+                    'card': self.game.type_pais[self.new_pai],
+                    'card1': self.game.type_pais[chi_pai[1]],
+                    'card2': self.game.type_pais[chi_pai[2]],
+                    'originCards': pais
+                })
 
             # 发送到后端进行动作评估
             ws.send(str(data))
@@ -66,13 +75,20 @@ class WSPlayer:
         """
         判断执行，胡、碰、杠
         """
+        t = int(str(t))
         if t == 2:  # 杠
             self.gang()
             self.mopai()  # 杠完之后还要摸牌
+            print("对家杠")
         elif t == 1:  # 碰
             self.peng()
+            print("对家碰")
         elif t == 0:  # 摸牌
+            print("对家摸牌")
             self.mopai()
+        elif t in (5, 6, 7):
+            print("对家吃牌")
+            self.chi(t)
 
     def mopai(self):
         """
@@ -115,38 +131,44 @@ class WSPlayer:
     def is_chi(self):
         """
         判断是否可以吃对家出的牌
+        返回的列表中，第一个元素表示吃牌所在顺子中的位置
+        5，第一位
+        6，第二位
+        7，第三位　
         """
+
+        result = []
 
         # 如果当前手上的牌的数量小于等于 2 不能吃牌
         if len(self.dynamic_pais) <= 2:
-            return False
-
+            return result
+        if self.oppo_pai <= 7 and self.oppo_pai + 1 in self.dynamic_pais and self.oppo_pai + 2 in self.dynamic_pais:
+            result.append([5, self.oppo_pai + 1, self.oppo_pai + 2])
+        if self.oppo_pai <= 8 and self.oppo_pai - 1 in self.dynamic_pais and self.oppo_pai + 1 in self.dynamic_pais:
+            result.append([6, self.oppo_pai - 1, self.oppo_pai + 1])
         if self.oppo_pai <= 9 and self.oppo_pai - 2 in self.dynamic_pais and self.oppo_pai - 1 in self.dynamic_pais:
-            return True
-        elif self.oppo_pai <= 8 and self.oppo_pai - 1 in self.dynamic_pais and self.oppo_pai + 1 in self.dynamic_pais:
-            return True
-        elif self.oppo_pai <= 7 and self.oppo_pai + 1 in self.dynamic_pais and self.oppo_pai + 2 in self.dynamic_pais:
-            return True
-        return False
+            result.append([7, self.oppo_pai - 2, self.oppo_pai - 1])
 
-    def chi(self):
+        return result
+
+    def chi(self, type):
         """
         吃牌且把相关牌从动态牌面中移除，添加到静态牌面
         """
 
         pai = self.oppo_pai
-        if pai <= 9 and pai - 2 in self.dynamic_pais and pai - 1 in self.dynamic_pais:
-            self.data['sunzi'][pai - 2] = {'times': self.get_times_by_type('sunzi', pai - 2) + 1, 'zimo': False}
-            self.dynamic_pais.remove(pai - 1)
-            self.dynamic_pais.remove(pai - 2)
-        elif pai <= 8 and pai - 1 in self.dynamic_pais and pai + 1 in self.dynamic_pais:
-            self.data['sunzi'][pai - 1] = {'times': self.get_times_by_type('sunzi', pai - 1) + 1, 'zimo': False}
-            self.dynamic_pais.remove(pai - 1)
-            self.dynamic_pais.remove(pai + 1)
-        elif pai <= 7 and pai + 1 in self.dynamic_pais and pai + 2 in self.dynamic_pais:
+        if type == 5:
             self.data['sunzi'][pai] = {'times': self.get_times_by_type('sunzi', pai) + 1, 'zimo': False}
             self.dynamic_pais.remove(pai + 1)
             self.dynamic_pais.remove(pai + 2)
+        elif type == 6:
+            self.data['sunzi'][pai - 1] = {'times': self.get_times_by_type('sunzi', pai - 1) + 1, 'zimo': False}
+            self.dynamic_pais.remove(pai - 1)
+            self.dynamic_pais.remove(pai + 1)
+        elif type == 7:
+            self.data['sunzi'][pai - 2] = {'times': self.get_times_by_type('sunzi', pai - 2) + 1, 'zimo': False}
+            self.dynamic_pais.remove(pai - 1)
+            self.dynamic_pais.remove(pai - 2)
 
     def is_gang(self):
         """

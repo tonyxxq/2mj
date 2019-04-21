@@ -31,9 +31,8 @@ class MyPlayer:
             self.zimo = False
 
             # 判断吃、碰、杠、胡动作，供用户选择
-            for index, sunzi in enumerate(self.is_chi()):
-                # print('吃 ', sunzi)
-                pass
+            for sunzi in self.is_chi():
+                print('吃 ', sunzi[0], "  ", sunzi[1:])
 
             if self.is_peng():
                 print("碰")
@@ -55,9 +54,8 @@ class MyPlayer:
             elif action == '杠':
                 self.gang()
                 self.mopai()  # 杠完之后还要摸牌
-            elif "吃" in action:
-                # chi_pais = list(map(int, action.split(" ")[1]))
-                pass
+            elif action in ('1', '2', '3'):
+                self.chi(int(action))
             else:
                 self.mopai()
 
@@ -120,6 +118,7 @@ class MyPlayer:
     def is_chi(self):
         """
         判断是否可以吃对家出的牌
+        第一个元素表示吃的牌在顺子中的位置
         """
 
         result = []
@@ -129,29 +128,30 @@ class MyPlayer:
             return result
 
         if self.oppo_pai <= 9 and self.oppo_pai - 2 in self.dynamic_pais and self.oppo_pai - 1 in self.dynamic_pais:
-            result.append([self.oppo_pai - 2, self.oppo_pai - 1, self.oppo_pai])
+            result.append([3, self.oppo_pai - 2, self.oppo_pai - 1, self.oppo_pai])
         if self.oppo_pai <= 8 and self.oppo_pai - 1 in self.dynamic_pais and self.oppo_pai + 1 in self.dynamic_pais:
-            result.append([self.oppo_pai - 1, self.oppo_pai, self.oppo_pai + 1])
+            result.append([2, self.oppo_pai - 1, self.oppo_pai, self.oppo_pai + 1])
         if self.oppo_pai <= 7 and self.oppo_pai + 1 in self.dynamic_pais and self.oppo_pai + 2 in self.dynamic_pais:
-            result.append([self.oppo_pai, self.oppo_pai + 1, self.oppo_pai + 2])
+            result.append([1, self.oppo_pai, self.oppo_pai + 1, self.oppo_pai + 2])
         return result
 
-    def chi(self, pais):
+    def chi(self, t):
         """
         吃牌且把相关牌从动态牌面中移除，添加到静态牌面
         """
 
-        index = pais.index(self.oppo_pai)
-        self.data['sunzi'][pais[0]] = {'times': self.get_times_by_type('sunzi', pais[0]) + 1, 'zimo': False}
-        if index == 0:
-            self.dynamic_pais.remove(pais[1])
-            self.dynamic_pais.remove(pais[2])
-        elif index == 1:
-            self.dynamic_pais.remove(pais[0])
-            self.dynamic_pais.remove(pais[2])
-        elif index == 2:
-            self.dynamic_pais.remove(pais[0])
-            self.dynamic_pais.remove(pais[1])
+        if t == 1:
+            self.data['sunzi'][self.oppo_pai] = {'times': self.get_times_by_type('sunzi', self.oppo_pai) + 1, 'zimo': False}
+            self.dynamic_pais.remove(self.oppo_pai + 1)
+            self.dynamic_pais.remove(self.oppo_pai + 2)
+        elif t == 2:
+            self.data['sunzi'][self.oppo_pai - 1] = {'times': self.get_times_by_type('sunzi', self.oppo_pai - 1) + 1, 'zimo': False}
+            self.dynamic_pais.remove(self.oppo_pai - 1)
+            self.dynamic_pais.remove(self.oppo_pai + 1)
+        elif t == 3:
+            self.data['sunzi'][self.oppo_pai - 2] = {'times': self.get_times_by_type('sunzi', self.oppo_pai - 2) + 1, 'zimo': False}
+            self.dynamic_pais.remove(self.oppo_pai - 1)
+            self.dynamic_pais.remove(self.oppo_pai - 2)
 
     def is_gang(self):
         """

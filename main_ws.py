@@ -16,7 +16,7 @@ def main():
     """
 
     # 建立 websocket 连接
-    ws = DummyClient('ws://localhost:8887', heartbeat_freq=2)
+    ws = DummyClient('ws://localhost:8887')
     ws.connect()
 
     # 初始化牌局，洗牌，初始化两个选手
@@ -48,7 +48,6 @@ def main():
                 time.sleep(2)
                 myplayer.oppo_pai = wsplayer.last_chupai
                 print("---------------------------")
-                print(wsplayer.last_chupai)
                 print("对家出牌：", paiju.type_pais[wsplayer.last_chupai])
                 print("对家手上的牌", list(map(lambda p: paiju.type_pais[p], sorted(wsplayer.dynamic_pais))))
                 print("---------------------------")
