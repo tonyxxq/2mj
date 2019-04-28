@@ -39,7 +39,7 @@ class MyPlayer:
             if self.is_peng():
                 print("碰")
 
-            if self.is_gang():
+            if self.is_ming_gang():
                 print("杠")
 
             if self.is_hu():
@@ -54,7 +54,7 @@ class MyPlayer:
             elif action == '碰':
                 self.peng()
             elif action == '杠':
-                self.gang()
+                self.ming_gang()
                 self.mopai()  # 杠完之后还要摸牌
             elif action in ('1', '2', '3'):
                 self.chi(int(action))
@@ -94,14 +94,18 @@ class MyPlayer:
                 print("自摸")
                 return
 
-            # if self.is_gang():
-            #     action = input('是否杠？请输入：y 或 n')
-            #
-            # if action == 'y':
-            #     self.gang()
-            #     self.mopai()
-
             self.dynamic_pais.append(pai)
+
+            action = None
+            gang_pais = self.is_an_gang()
+            if len(self.is_an_gang()) > 0:  # 杠
+                content = '输入杠的牌值，否则回车' + str(gang_pais)
+                action = input(content)
+
+            if action is not None:
+                self.an_gang(action)
+                pai = self.mopai()
+
             return pai
 
     def is_peng(self):
@@ -143,21 +147,24 @@ class MyPlayer:
         """
 
         if t == 1:
-            self.data['sunzi'][self.oppo_pai] = {'times': self.get_times_by_type('sunzi', self.oppo_pai) + 1, 'zimo': False}
+            self.data['sunzi'][self.oppo_pai] = {'times': self.get_times_by_type('sunzi', self.oppo_pai) + 1,
+                                                 'zimo': False}
             self.dynamic_pais.remove(self.oppo_pai + 1)
             self.dynamic_pais.remove(self.oppo_pai + 2)
         elif t == 2:
-            self.data['sunzi'][self.oppo_pai - 1] = {'times': self.get_times_by_type('sunzi', self.oppo_pai - 1) + 1, 'zimo': False}
+            self.data['sunzi'][self.oppo_pai - 1] = {'times': self.get_times_by_type('sunzi', self.oppo_pai - 1) + 1,
+                                                     'zimo': False}
             self.dynamic_pais.remove(self.oppo_pai - 1)
             self.dynamic_pais.remove(self.oppo_pai + 1)
         elif t == 3:
-            self.data['sunzi'][self.oppo_pai - 2] = {'times': self.get_times_by_type('sunzi', self.oppo_pai - 2) + 1, 'zimo': False}
+            self.data['sunzi'][self.oppo_pai - 2] = {'times': self.get_times_by_type('sunzi', self.oppo_pai - 2) + 1,
+                                                     'zimo': False}
             self.dynamic_pais.remove(self.oppo_pai - 1)
             self.dynamic_pais.remove(self.oppo_pai - 2)
 
-    def is_gang(self):
+    def is_ming_gang(self):
         """
-        判断是否可以杠，如果自己摸的牌在静态牌和动态牌中都需要判断一下（暗杠），如果是杠的对家的牌，只在动态牌中查找（明杠）
+        判断是否可以明杠
         """
         if self.zimo:
             # 有碰牌
@@ -166,11 +173,23 @@ class MyPlayer:
 
         return self.dynamic_pais.count(self.new_pai) == 3
 
-    def gang(self):
+    def is_an_gang(self):
         """
-        杠，包括明杠和暗杠
+        判断是否可以暗杠
         """
+        # 相同的牌有四个
+        pais_count = collections.Counter(self.dynamic_pais)
+        pais = []
+        for k, v in pais_count.items():
+            if v == 4:
+                pais.append(k)
 
+        return pais
+
+    def ming_gang(self):
+        """
+        明杠
+        """
         if self.zimo:
             self.data['gang'][self.new_pai] = {'times': 1, 'zimo': True}
 
@@ -182,6 +201,13 @@ class MyPlayer:
         else:
             self.data['gang'][self.new_pai] = {'times': 1, 'zimo': False}
             self.removeEle(self.dynamic_pais, self.new_pai, 3)
+
+    def an_gang(self, pai):
+        """
+        暗杠
+        """
+        self.data['gang'][pai] = {'times': 1, 'zimo': True}
+        self.removeEle(self.dynamic_pais, int(pai), 4)
 
     def get_times_by_type(self, pai_type, pai):
         """

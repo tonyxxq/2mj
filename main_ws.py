@@ -51,7 +51,7 @@ def main():
                     myplayer.oppo_pai = wsplayer.last_chupai
                     print("---------------------------")
                     print("对家出牌：", paiju.type_pais[wsplayer.last_chupai])
-                    print("对家手上的牌", list(map(lambda p: paiju.type_pais[p], sorted(wsplayer.dynamic_pais))))
+                    # print("对家手上的牌", list(map(lambda p: paiju.type_pais[p], sorted(wsplayer.dynamic_pais))))
                     print("---------------------------")
             turn = not turn
 
@@ -75,8 +75,8 @@ class DummyClient(WebSocketClient):
     def closed(self, code, reason=None):
         print("Closed down", code, reason)
 
-    # def received_message(self, message):
-    #     return message
+        # def received_message(self, message):
+        #     return message
 
 
 if __name__ == '__main__':

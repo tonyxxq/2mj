@@ -44,7 +44,7 @@ class WSPlayer:
             if self.is_peng():  # 碰
                 data.append({'type': 1, 'card': self.game.type_pais[self.new_pai], 'originCards': pais})
 
-            if self.is_gang():  # 杠
+            if self.is_ming_gang():  # 杠
                 data.append({'type': 2, 'card': self.game.type_pais[self.new_pai], 'originCards': pais})
 
             chi_pais = self.is_chi()  # 吃牌的排列组合
@@ -77,9 +77,9 @@ class WSPlayer:
         """
         t = int(str(t))
         if t == 2:  # 杠
-            self.gang()
+            self.ming_gang()
             self.mopai()  # 杠完之后还要摸牌
-            print("对家杠")
+            print("对家明杠")
         elif t == 1:  # 碰
             self.peng()
             print("对家碰")
@@ -108,12 +108,65 @@ class WSPlayer:
             if self.is_hu():  # 能胡就胡
                 self.game.finished = True
                 return
-            elif self.is_gang():  # 能杠就杠，杠完再摸牌
-                self.gang()
-                self.mopai()
-            else:  # 否则摸牌
-                self.dynamic_pais.append(pai)
-                return pai
+
+            self.dynamic_pais.append(pai)
+
+            gang_pais = self.is_an_gang()
+            # TODO 需要请求服务器
+            for pai in gang_pais:
+                self.an_gang(pai)
+                pai = self.mopai()
+                print("对家暗杠")
+
+            self.last_chupai = pai
+            return pai
+
+    def is_ming_gang(self):
+        """
+        判断是否可以明杠
+        """
+        if self.zimo:
+            # 有碰牌
+            if self.data['kezi'].get(self.new_pai) is not None:
+                return True
+
+        return self.dynamic_pais.count(self.new_pai) == 3
+
+    def is_an_gang(self):
+        """
+        判断是否可以暗杠
+        """
+        # 相同的牌有四个
+        pais_count = collections.Counter(self.dynamic_pais)
+        pais = []
+        for k, v in pais_count.items():
+            if v == 4:
+                pais.append(k)
+
+        return pais
+
+    def ming_gang(self):
+        """
+        明杠
+        """
+        if self.zimo:
+            self.data['gang'][self.new_pai] = {'times': 1, 'zimo': True}
+
+            # 有刻子，从刻子移除，转到杠
+            if self.data['kezi'].get(self.new_pai) is not None:
+                del self.data['kezi'][self.new_pai]
+            else:
+                self.removeEle(self.dynamic_pais, self.new_pai, 3)
+        else:
+            self.data['gang'][self.new_pai] = {'times': 1, 'zimo': False}
+            self.removeEle(self.dynamic_pais, self.new_pai, 3)
+
+    def an_gang(self, pai):
+        """
+        暗杠
+        """
+        self.data['gang'][pai] = {'times': 1, 'zimo': True}
+        self.removeEle(self.dynamic_pais, int(pai), 4)
 
     def is_peng(self):
         """
