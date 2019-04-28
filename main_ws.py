@@ -18,6 +18,8 @@ def main():
     # 建立 websocket 连接
     ws = DummyClient('ws://localhost:8887')
     ws.connect()
+    my_total_score = 0
+    ws_total_score = 0
     for i in range(10):
         # 初始化牌局，洗牌，初始化两个选手
         paiju = Game()
@@ -45,16 +47,21 @@ def main():
                 if paiju.finished:
                     myplayer.score = -wsplayer.score
                 else:
-                    time.sleep(2)
+                    time.sleep(1)
                     myplayer.oppo_pai = wsplayer.last_chupai
                     print("---------------------------")
                     print("对家出牌：", paiju.type_pais[wsplayer.last_chupai])
-                    # print("对家手上的牌", list(map(lambda p: paiju.type_pais[p], sorted(wsplayer.dynamic_pais))))
+                    print("对家手上的牌", list(map(lambda p: paiju.type_pais[p], sorted(wsplayer.dynamic_pais))))
                     print("---------------------------")
             turn = not turn
 
         print("myplayer: data", times.restore_pais(myplayer.data), myplayer.fanzhong, "得分", myplayer.score)
         print("wsplayer: data", times.restore_pais(wsplayer.data), wsplayer.fanzhong, "得分", wsplayer.score)
+        ws_total_score += wsplayer.score
+        my_total_score += myplayer.score
+
+    print("ws_total_score", ws_total_score)
+    print("my_total_score", my_total_score)
 
     # webscoket 一直建立连接
     ws.run_forever()
@@ -68,20 +75,9 @@ class DummyClient(WebSocketClient):
     def closed(self, code, reason=None):
         print("Closed down", code, reason)
 
-    def received_message(self, message):
-        return message
+    # def received_message(self, message):
+    #     return message
 
 
 if __name__ == '__main__':
-    # start_time =time.time()
-    # for i in range(1000):
-
-    # ws = DummyClient('ws://localhost:8887')
-    # ws.connect()
-    # ws.send("xxx")
-    # ws.received_message =xx
-    # ws.run_forever()
     main()
-
-    # end_time =time.time()
-    # print(start_time - end_time)

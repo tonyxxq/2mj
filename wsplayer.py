@@ -348,6 +348,14 @@ class WSPlayer:
                 pai[i] += 2
 
     def chu_pai(self, ws):
+        # 判断当前牌面是否有单个的风牌和刻子牌，有则出
+        pai_count = collections.Counter(self.dynamic_pais)
+        for k, v in pai_count.items():
+            if k > 9 and v == 1:
+                self.last_chupai = k
+                self.dynamic_pais.remove(k)
+                return k
+
         # 发送当前的牌面到后台进行出牌计算
         pais = self.game.num2Str(self.dynamic_pais)
         data = [{'type': 4, 'card': self.game.type_pais[self.new_pai], 'originCards': pais}]
@@ -432,10 +440,10 @@ class WSPlayer:
         if '一色双龙会' not in excludes and times.is_yiseshuanglonghui(data):
             score += 64
             includes.append('一色双龙会')
-        if '小三元' not in excludes and times.is_xiaosanyuan(data):
-            score += 64
-            includes.append('小三元')
-            excludes.extend(['箭刻', '双箭刻'])
+        # if '小三元' not in excludes and times.is_xiaosanyuan(data):
+        #     score += 64
+        #     includes.append('小三元')
+        #     excludes.extend(['箭刻', '双箭刻'])
 
         ########################### 48 番 ##################
         if '一色四同顺' not in excludes and times.is_yisesitongsun(data):
