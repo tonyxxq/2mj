@@ -43,10 +43,6 @@ public class AIServer extends WebSocketServer {
         List<Majiangs> majiangs = JSONObject.parseArray(message, Majiangs.class);
         double score = 0.0;
         int type = Majiangs.TYPE_ORIGIN;
-
-
-
-
         for (Majiangs mj : majiangs) {
             List<Integer> remainCards = MaJiangDef.stringToCards(mj.getRemainCards());
             List<Integer> cards = MaJiangDef.stringToCards(mj.getOriginCards());
