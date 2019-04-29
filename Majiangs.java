@@ -17,6 +17,7 @@ public class Majiangs {
 
     private int type;
     private String originCards; // 玩家手上的牌
+    private String remainCards; // 牌桌上剩余的牌
 
     private String card; // 需要碰、杠、胡的牌
     private String card1;
@@ -61,5 +62,13 @@ public class Majiangs {
 
     public String getCard() {
         return card;
+    }
+
+    public String getRemainCards() {
+        return remainCards;
+    }
+
+    public void setRemainCards(String remainCards) {
+        this.remainCards = remainCards;
     }
 }
