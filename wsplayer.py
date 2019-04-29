@@ -39,13 +39,14 @@ class WSPlayer:
             pais = self.game.num2Str(self.dynamic_pais)
 
             # 原始牌型
-            data.append({'type': 0, 'card': self.game.type_pais[self.new_pai], 'originCards': pais})
+            remain_pais = self.game.num2Str(self.game.pais)
+            data.append({'type': 0, 'card': self.game.type_pais[self.new_pai], 'originCards': pais, 'remainCards': remain_pais})
 
             if self.is_peng():  # 碰
-                data.append({'type': 1, 'card': self.game.type_pais[self.new_pai], 'originCards': pais})
+                data.append({'type': 1, 'card': self.game.type_pais[self.new_pai], 'originCards': pais, 'remainCards': remain_pais})
 
             if self.is_ming_gang():  # 杠
-                data.append({'type': 2, 'card': self.game.type_pais[self.new_pai], 'originCards': pais})
+                data.append({'type': 2, 'card': self.game.type_pais[self.new_pai], 'originCards': pais, 'remainCards': remain_pais})
 
             chi_pais = self.is_chi()  # 吃牌的排列组合
             for chi_pai in chi_pais:
@@ -54,7 +55,8 @@ class WSPlayer:
                     'card': self.game.type_pais[self.new_pai],
                     'card1': self.game.type_pais[chi_pai[1]],
                     'card2': self.game.type_pais[chi_pai[2]],
-                    'originCards': pais
+                    'originCards': pais,
+                    'remainCards': remain_pais
                 })
 
             # 发送到后端进行动作评估
@@ -411,7 +413,8 @@ class WSPlayer:
 
         # 发送当前的牌面到后台进行出牌计算
         pais = self.game.num2Str(self.dynamic_pais)
-        data = [{'type': 4, 'card': self.game.type_pais[self.new_pai], 'originCards': pais}]
+        remain_pais = self.game.num2Str(self.game.pais)
+        data = [{'type': 4, 'card': self.game.type_pais[self.new_pai], 'originCards': pais, 'remainCards': remain_pais}]
         ws.send(str(data))
         ws.received_message = self.remove_dynamic_pai
 
