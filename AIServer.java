@@ -49,29 +49,29 @@ public class AIServer extends WebSocketServer {
         double score = 0.0;
         for (Majiangs mj : majiangs) {
             if (mj.getType() == Majiangs.TYPE_OUT) { // 出牌
-                int out = AIUtil.outAI(mj.getOriginCards(), gui);
+                int out = AIUtil.outAI(mj.getOriginCards());
                 conn.send(out+""); //  出牌和其他不兼容
                 System.out.println(out);
                 return;
             } else if (mj.getType() == Majiangs.TYPE_PENG) { // 碰
-                double pengScore = AIUtil.pengAIScore(mj.getOriginCards(), gui, mj.getCard(), 1.0);
+                double pengScore = AIUtil.pengAIScore(mj.getOriginCards(), mj.getCard(), 1.0);
                 if (pengScore > score) {
                     type = Majiangs.TYPE_PENG;
                 }
             } else if (mj.getType() == Majiangs.TYPE_GANG) { // 杠
-                double gangScore = AIUtil.gangAIScore(mj.getOriginCards(), gui, mj.getCard(), 1.0);
+                double gangScore = AIUtil.gangAIScore(mj.getOriginCards(), mj.getCard(), 1.0);
                 if (gangScore > score) {
                     type = Majiangs.TYPE_GANG;
                 }
             } else if (mj.getType() == Majiangs.TYPE_ORIGIN) { // 原始的牌值
-                double originScore = AIUtil.calc(mj.getOriginCards(), gui);
+                double originScore = AIUtil.calc(mj.getOriginCards());
                 if (originScore > score) {
                     type = Majiangs.TYPE_ORIGIN;
                 }
             } else if (mj.getType() == Majiangs.TYPE_CHI_1
                     || mj.getType() == Majiangs.TYPE_CHI_2
                     || mj.getType() == Majiangs.TYPE_CHI_3) { // 吃牌
-                double chiScore = AIUtil.chiAIScore(mj.getOriginCards(), gui, mj.getCard(), mj.getCard1(), mj.getCard2());
+                double chiScore = AIUtil.chiAIScore(mj.getOriginCards(), mj.getCard(), mj.getCard1(), mj.getCard2());
                 if (chiScore > score) {
                     type = mj.getType();
                 }
