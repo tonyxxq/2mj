@@ -1,5 +1,7 @@
 package com.github.esrrhs.majiang_algorithm;
 
+import java.util.List;
+
 /**
  * Created by Administrator on 2019/4/19 0019.
  */
@@ -16,59 +18,61 @@ public class Majiangs {
     public static final int TYPE_CHI_3 = 7;
 
     private int type;
-    private String originCards; // 玩家手上的牌
-    private String remainCards; // 牌桌上剩余的牌
-
-    private String card; // 需要碰、杠、胡的牌
-    private String card1;
-
-    public void setCard1(String card1) {
-        this.card1 = card1;
-    }
-
-    public void setCard2(String card2) {
-        this.card2 = card2;
-    }
-
-    public String getCard1() {
-        return card1;
-    }
-
-    public String getCard2() {
-        return card2;
-    }
-
-    private String card2;
-
-    public void setType(int type) {
-        this.type = type;
-    }
-
-    public void setOriginCards(String originCards) {
-        this.originCards = originCards;
-    }
-
-    public void setCard(String card) {
-        this.card = card;
-    }
+    private List<Integer> originCards; // 玩家手上的牌
 
     public int getType() {
         return type;
     }
 
-    public String getOriginCards() {
+    public List<Integer> getOriginCards() {
         return originCards;
     }
 
-    public String getCard() {
-        return card;
-    }
-
-    public String getRemainCards() {
+    public List<Integer> getRemainCards() {
         return remainCards;
     }
 
-    public void setRemainCards(String remainCards) {
+    public Integer getCard() {
+        return card;
+    }
+
+    public Integer getCard1() {
+        return card1;
+    }
+
+    public void setType(int type) {
+
+        this.type = type;
+    }
+
+    public void setOriginCards(List<Integer> originCards) {
+        this.originCards = originCards;
+    }
+
+    public void setRemainCards(List<Integer> remainCards) {
         this.remainCards = remainCards;
     }
+
+    public void setCard(Integer card) {
+        this.card = card;
+    }
+
+    public void setCard1(Integer card1) {
+        this.card1 = card1;
+    }
+
+    private List<Integer> remainCards; // 牌桌上剩余的牌
+
+    private Integer card; // 需要碰、杠、胡的牌
+    private Integer card1;
+
+    public void setCard2(Integer card2) {
+        this.card2 = card2;
+    }
+
+    public Integer getCard2() {
+        return card2;
+    }
+
+    private Integer card2;
 }

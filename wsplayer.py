@@ -36,34 +36,36 @@ class WSPlayer:
 
             data = []
 
-            pais = self.game.num2Str(self.dynamic_pais)
-
             # 原始牌型
-            remain_pais = self.game.num2Str(self.game.pais)
-            data.append({'type': 0, 'card': self.game.type_pais[self.new_pai], 'originCards': pais, 'remainCards': remain_pais})
-
             if self.is_peng():  # 碰
-                data.append({'type': 1, 'card': self.game.type_pais[self.new_pai], 'originCards': pais, 'remainCards': remain_pais})
+                data.append(
+                    {'type': 1, 'card': self.new_pai, 'originCards': self.dynamic_pais, 'remainCards': self.game.pais})
 
             if self.is_ming_gang():  # 杠
-                data.append({'type': 2, 'card': self.game.type_pais[self.new_pai], 'originCards': pais, 'remainCards': remain_pais})
+                data.append(
+                    {'type': 2, 'card': self.new_pai, 'originCards': self.dynamic_pais, 'remainCards': self.game.pais})
 
             chi_pais = self.is_chi()  # 吃牌的排列组合
             for chi_pai in chi_pais:
                 data.append({
                     'type': chi_pai[0],
-                    'card': self.game.type_pais[self.new_pai],
-                    'card1': self.game.type_pais[chi_pai[1]],
-                    'card2': self.game.type_pais[chi_pai[2]],
-                    'originCards': pais,
-                    'remainCards': remain_pais
+                    'card': self.new_pai,
+                    'card1': chi_pai[1],
+                    'card2': chi_pai[2],
+                    'originCards': self.dynamic_pais,
+                    'remainCards': self.game.pais
                 })
 
             # 发送到后端进行动作评估
-            ws.send(str(data))
-            ws.received_message = self.jin_pai
+            if len(data) > 0:
+                data.append(
+                    {'type': 0, 'card': self.new_pai, 'originCards': self.dynamic_pais, 'remainCards': self.game.pais})
 
-        time.sleep(2)
+                ws.send(str(data))
+                ws.received_message = self.jin_pai
+            else:
+                self.jin_pai(0)
+        # time.sleep(8)
         # 不是胡牌或流局就必须出牌
         if not self.game.finished:
             pai = self.chu_pai(ws)
@@ -404,18 +406,19 @@ class WSPlayer:
 
     def chu_pai(self, ws):
         # 判断当前牌面是否有单个的风牌和刻子牌，有则出
-        pai_count = collections.Counter(self.dynamic_pais)
-        for k, v in pai_count.items():
-            if k > 9 and v == 1:
-                self.last_chupai = k
-                self.dynamic_pais.remove(k)
-                return k
+        # pai_count = collections.Counter(self.dynamic_pais)
+        # for k, v in pai_count.items():
+        #     if k > 9 and v == 1:
+        #         self.last_chupai = k
+        #         self.dynamic_pais.remove(k)
+        #         return k
 
         # 发送当前的牌面到后台进行出牌计算
-        pais = self.game.num2Str(self.dynamic_pais)
-        remain_pais = self.game.num2Str(self.game.pais)
-        data = [{'type': 4, 'card': self.game.type_pais[self.new_pai], 'originCards': pais, 'remainCards': remain_pais}]
+        data = [{'type': 4, 'card': self.new_pai, 'originCards': self.dynamic_pais, 'remainCards': self.game.pais}]
         ws.send(str(data))
+
+        time.sleep(60)
+
         ws.received_message = self.remove_dynamic_pai
 
         return self.last_chupai
@@ -424,10 +427,12 @@ class WSPlayer:
         """
         动态牌中移除指定的牌
         """
+        time.sleep(10)
+        print("出的牌是", pai)
+
         pai = str(pai)
-        pai = str.split(pai, ',')[0]
-        self.dynamic_pais.remove(self.game.pai_types[pai])
-        self.last_chupai = self.game.pai_types[pai]
+        self.dynamic_pais.remove(int(pai))
+        self.last_chupai = int(pai)
 
     def cal_score(self, data):
         """

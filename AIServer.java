@@ -41,40 +41,37 @@ public class AIServer extends WebSocketServer {
         System.out.println("收到了消息：" + message);
         List<Integer> gui = new ArrayList<>();
         List<Majiangs> majiangs = JSONObject.parseArray(message, Majiangs.class);
-        double score = 0.0;
+
+        // 计算出所有摸牌的组合，一次计算后面就不用再计算了
+        AICommon.genSimulateCards(majiangs.get(0).getRemainCards());
+
         int type = Majiangs.TYPE_ORIGIN;
+        double score = 0.0;
         for (Majiangs mj : majiangs) {
-            List<Integer> remainCards = MaJiangDef.stringToCards(mj.getRemainCards());
-            List<Integer> cards = MaJiangDef.stringToCards(mj.getOriginCards());
-            List<Integer> card = MaJiangDef.stringToCards(mj.getCard());
             if (mj.getType() == Majiangs.TYPE_OUT) { // 出牌
-                int out = AIUtil.outAI(cards, gui, remainCards);
-                List<Integer> result = new ArrayList<>();
-                result.add(out);
-                conn.send(MaJiangDef.cardsToString(result) + ""); //  出牌和其他不兼容
-                System.out.println("输出的是: " + MaJiangDef.cardsToString(result));
+                int out = AIUtil.outAI(mj.getOriginCards(), gui);
+                conn.send(out+""); //  出牌和其他不兼容
+                System.out.println(out);
                 return;
             } else if (mj.getType() == Majiangs.TYPE_PENG) { // 碰
-                double pengScore = AIUtil.pengAIScore(cards, gui, card.get(0), 1.0, remainCards);
+                double pengScore = AIUtil.pengAIScore(mj.getOriginCards(), gui, mj.getCard(), 1.0);
                 if (pengScore > score) {
                     type = Majiangs.TYPE_PENG;
                 }
             } else if (mj.getType() == Majiangs.TYPE_GANG) { // 杠
-                double gangScore = AIUtil.gangAIScore(cards, gui, card.get(0), 1.0, remainCards);
+                double gangScore = AIUtil.gangAIScore(mj.getOriginCards(), gui, mj.getCard(), 1.0);
                 if (gangScore > score) {
                     type = Majiangs.TYPE_GANG;
                 }
             } else if (mj.getType() == Majiangs.TYPE_ORIGIN) { // 原始的牌值
-                double originScore = AIUtil.calc(cards, gui, remainCards);
+                double originScore = AIUtil.calc(mj.getOriginCards(), gui);
                 if (originScore > score) {
                     type = Majiangs.TYPE_ORIGIN;
                 }
             } else if (mj.getType() == Majiangs.TYPE_CHI_1
                     || mj.getType() == Majiangs.TYPE_CHI_2
                     || mj.getType() == Majiangs.TYPE_CHI_3) { // 吃牌
-                List<Integer> card1 = MaJiangDef.stringToCards(mj.getCard1());
-                List<Integer> card2 = MaJiangDef.stringToCards(mj.getCard2());
-                double chiScore = AIUtil.chiAIScore(cards, gui, card.get(0), card1.get(0), card2.get(0), remainCards);
+                double chiScore = AIUtil.chiAIScore(mj.getOriginCards(), gui, mj.getCard(), mj.getCard1(), mj.getCard2());
                 if (chiScore > score) {
                     type = mj.getType();
                 }

@@ -54,14 +54,6 @@ public class HuUtil {
             int num = cards.get(i - 1);
             wan_key = wan_key * 10 + num;
         }
-        for (int i = MaJiangDef.TONG1; i <= MaJiangDef.TONG9; i++) {
-            int num = cards.get(i - 1);
-            tong_key = tong_key * 10 + num;
-        }
-        for (int i = MaJiangDef.TIAO1; i <= MaJiangDef.TIAO9; i++) {
-            int num = cards.get(i - 1);
-            tiao_key = tiao_key * 10 + num;
-        }
         for (int i = MaJiangDef.FENG_DONG; i <= MaJiangDef.FENG_BEI; i++) {
             int num = cards.get(i - 1);
             feng_key = feng_key * 10 + num;
@@ -184,14 +176,6 @@ public class HuUtil {
         for (int i = MaJiangDef.WAN1; i <= MaJiangDef.WAN9; i++) {
             int num = cards.get(i - 1);
             wan_key = wan_key * 10 + num;
-        }
-        for (int i = MaJiangDef.TONG1; i <= MaJiangDef.TONG9; i++) {
-            int num = cards.get(i - 1);
-            tong_key = tong_key * 10 + num;
-        }
-        for (int i = MaJiangDef.TIAO1; i <= MaJiangDef.TIAO9; i++) {
-            int num = cards.get(i - 1);
-            tiao_key = tiao_key * 10 + num;
         }
         for (int i = MaJiangDef.FENG_DONG; i <= MaJiangDef.FENG_BEI; i++) {
             int num = cards.get(i - 1);
@@ -323,26 +307,26 @@ public class HuUtil {
         HuTable.load();
     }
 
-    public static void testHu() {
-        String init = "1万,1万";
-        String gui = "1万";
-        List<Integer> cards = MaJiangDef.stringToCards(init);
-        System.out.println(HuUtil.isHu(cards, MaJiangDef.stringToCard(gui)));
-    }
-
-    // 胡的番数多，还能摸到的听牌多，打出的牌对家胡的概率小
-    public static void testTing() {
-        String init = "1万,2万,2筒,3筒,4筒,2条,3条,4条,东,东,东,南,南";
-        String gui = "";
-        List<Integer> cards = MaJiangDef.stringToCards(init);
-        System.out.println(MaJiangDef.cardsToString(HuUtil.isTing(cards, MaJiangDef.stringToCard(gui))));
-    }
+//    public static void testHu() {
+//        String init = "1万,1万";
+//        String gui = "1万";
+//        List<Integer> cards = MaJiangDef.stringToCards(init);
+//        System.out.println(HuUtil.isHu(cards, MaJiangDef.stringToCard(gui)));
+//    }
+//
+//    // 胡的番数多，还能摸到的听牌多，打出的牌对家胡的概率小
+//    public static void testTing() {
+//        String init = "1万,2万,2筒,3筒,4筒,2条,3条,4条,东,东,东,南,南";
+//        String gui = "";
+//        List<Integer> cards = MaJiangDef.stringToCards(init);
+//        System.out.println(MaJiangDef.cardsToString(HuUtil.isTing(cards, MaJiangDef.stringToCard(gui))));
+//    }
 
     public static void main(String[] args) {
         // 需要生成文件时 加上gen()
         //gen();
         load();
         //testHu();
-        testTing();
+//        testTing();
     }
 }
