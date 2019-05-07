@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import pickle
+from tensorflow.python.layers.core import Dense
 
 # ##################################### 定义参数 #####################################
 num_epochs = 500
@@ -45,27 +46,59 @@ with train_graph.as_default():
     embedding = tf.Variable(tf.random_uniform((vocab_size, embed_dim), -1, 1))
     inputs = tf.nn.embedding_lookup(embedding, input_text)
 
+
     # 创建 RNN 结构，两个 lstm 单元格叠加，并且每个 lstm 中的网络的层数为 rnn_size
     # 初始状态，因为是按照批次进行训练的，所以初始化一个批次的状态数据
     # 注意：lstm 的状态变量包括 cell 层的状态和 hidden 层的状态，且多个 lstm 的状态组成一个元组
     # 所以此处的状态的形状为 lstm 个数  x  2（一个是 cell 一个是 hidden） x  batch_size x rnn_size
-    lstm_cell = tf.contrib.rnn.BasicLSTMCell(rnn_size)
-    if is_training is not None:
-        lstm_cell = tf.contrib.rnn.DropoutWrapper(lstm_cell, output_keep_prob=0.5)
+    def lstm_cell():
+        lstm = tf.contrib.rnn.BasicLSTMCell(rnn_size)
+        lstm = tf.contrib.rnn.DropoutWrapper(lstm, output_keep_prob=0.5)
+        return lstm
 
-    cell = tf.contrib.rnn.MultiRNNCell([lstm_cell] * 2)
+
+    cell = tf.contrib.rnn.MultiRNNCell([lstm_cell() for _ in range(2)])
 
     initial_state = cell.zero_state(batch_size, tf.float32)
-    InitailState = tf.identity(initial_state, name='initial_state')
 
-    # 创建 RNN
-    rnn, final_state = tf.nn.dynamic_rnn(cell, inputs, dtype=tf.float32)
+    # 创建编码器，output 输出的是 （batch_size, seq_length, rnn_size）
+    output, final_state = tf.nn.dynamic_rnn(cell, inputs, dtype=tf.float32)
+
+
+    # 创建解码器
+    def get_decoder_cell():
+        decoder_cell = tf.contrib.rnn.BasicLSTMCell(rnn_size)
+        return decoder_cell
+
+
+    cell = tf.contrib.rnn.MultiRNNCell([get_decoder_cell() for _ in range(2)])
 
     # 建立了一个全连接层
-    logits = tf.contrib.layers.fully_connected(rnn, vocab_size,
-                                               activation_fn=None,
-                                               weights_initializer=tf.truncated_normal_initializer(stddev=0.1),
-                                               biases_initializer=tf.zeros_initializer())
+    output_layer = Dense(vocab_size, kernel_initializer=tf.truncated_normal_initializer(mean=0.1, stddev=0.1))
+
+    # 训练时的解码器
+    with tf.variable_scope("decode"):
+        decoder_embed_input = tf.nn.embedding_lookup(embedding, input_text)
+        training_helper = tf.contrib.seq2seq.TrainingHelper(inputs=decoder_embed_input,
+                                                            sequence_length=seq_length,
+                                                            time_major=False)
+        training_decoder = tf.contrib.seq2seq.BasicDecoder(cell, training_helper, final_state, output_layer)
+        training_decoder_output, _, _ = tf.contrib.seq2seq.dynamic_decode(training_decoder,
+                                                                          impute_finished=True,
+                                                                          maximum_iterations=seq_length)
+
+    # 预测时的解码器
+    with tf.variable_scope("decode", reuse=True):
+        start_tokens = tf.tile(tf.constant([target_letter_to_int['<GO>']], dtype=tf.int32), [batch_size])
+        predicting_helper = tf.contrib.seq2seq.GreedyEmbeddingHelper(embedding, start_tokens,
+                                                                     target_letter_to_int['<EOS>'])
+        predicting_decoder = tf.contrib.seq2seq.BasicDecoder(cell,
+                                                             predicting_helper,
+                                                             final_state,
+                                                             output_layer)
+        predicting_decoder_output, _, _ = tf.contrib.seq2seq.dynamic_decode(predicting_decoder,
+                                                                            impute_finished=True,
+                                                                            maximum_iterations=seq_length)
 
     # 输出每个词语的概率
     probs = tf.nn.softmax(logits, name="probs")
@@ -114,6 +147,7 @@ with tf.Session(graph=test_graph) as sess:
     for i in range(gen_length):
         dyn_input = [[vocab_to_int[word] for word in sentences[-seq_length:]]]
         probabilities = sess.run([probs], {input_text: dyn_input})
+        print(list(int_to_vocab.values()))
         pred_word = np.random.choice(list(int_to_vocab.values()), 1, p=probabilities[-1][-1][-1])[0]
         sentences.append(pred_word)
 
