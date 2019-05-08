@@ -1,5 +1,4 @@
 import tensorflow as tf
-import numpy as np
 
 # embeding = tf.contrib.layers.embed_sequence([1, 2, 1, 4], 5, 6)
 # inputs = tf.nn.embedding_lookup(embeding, [1, 2])
@@ -18,19 +17,18 @@ import numpy as np
 # tf.train.Optimizer.apply_gradients(grads_and_vars, global_step=None, name=None)
 # https://www.jianshu.com/p/de214abd6ee9
 # https://blog.csdn.net/u014595019/article/details/52805444
+sess = tf.InteractiveSession()
 
-xx = np.array([[[2, 3, 4, 8],
-                [3, 1, 4, 1],
-                [6, 3, 2, 6]],
+x = tf.Variable(tf.truncated_normal((2, 2)))
+global_step = tf.Variable(0, trainable=False)
 
-               [[10, 2, 45, 2],
-                [2,  4, 5,  10],
-                [22, 4, 4,  1]]])
+ema = tf.train.ExponentialMovingAverage(0.99, global_step)
 
-with tf.Session() as sess:
-    print()np.max(z,axis=0).shape
-(3, 4)
->>> np.max(z,axis=1).shape
-(2, 4)
->>> np.max(z,axis=2).shape
-(2, 3)
+print(tf.trainable_variables())
+
+ema.apply(tf.trainable_variables())
+tf.global_variables_initializer().run()
+
+print(x.eval())
+print(ema.average(x).eval())
+
