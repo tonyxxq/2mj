@@ -58,7 +58,6 @@ with tf.Session() as sess:
     for i in range(2000):
         xs, ys = mnist.train.next_batch(400)
         _, lr = sess.run([train_op, learning_rate], feed_dict={x: xs, y: ys})
-        print(lr)
         # 验证
         if i % 100 == 0:
             xs_, ys_ = mnist.validation.images, mnist.validation.labels

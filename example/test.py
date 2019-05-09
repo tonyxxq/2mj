@@ -17,18 +17,9 @@ import tensorflow as tf
 # tf.train.Optimizer.apply_gradients(grads_and_vars, global_step=None, name=None)
 # https://www.jianshu.com/p/de214abd6ee9
 # https://blog.csdn.net/u014595019/article/details/52805444
-sess = tf.InteractiveSession()
+import numpy as np
 
-x = tf.Variable(tf.truncated_normal((2, 2)))
-global_step = tf.Variable(0, trainable=False)
-
-ema = tf.train.ExponentialMovingAverage(0.99, global_step)
-
-print(tf.trainable_variables())
-
-ema.apply(tf.trainable_variables())
-tf.global_variables_initializer().run()
-
-print(x.eval())
-print(ema.average(x).eval())
-
+x = np.linspace(1, 48, 48)
+y = np.reshape(x, (3, 4, 4))
+z = np.stack(y, axis=2)
+print(np.shape(z))
