@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 
 # embeding = tf.contrib.layers.embed_sequence([1, 2, 1, 4], 5, 6)
 # inputs = tf.nn.embedding_lookup(embeding, [1, 2])
@@ -17,9 +18,18 @@ import tensorflow as tf
 # tf.train.Optimizer.apply_gradients(grads_and_vars, global_step=None, name=None)
 # https://www.jianshu.com/p/de214abd6ee9
 # https://blog.csdn.net/u014595019/article/details/52805444
-import numpy as np
+import random
 
-x = np.linspace(1, 48, 48)
-y = np.reshape(x, (3, 4, 4))
-z = np.stack(y, axis=2)
-print(np.shape(z))
+sess = tf.InteractiveSession()
+
+x = tf.constant([[[[1, 2, 3], [4, 5, 6], [7, 8, 9]]]])
+print("before shape：", x.get_shape())
+print(sess.run(x))
+
+y = tf.squeeze(x)
+print("after shape：", y.get_shape())
+print(sess.run(y))
+
+# 也可指定要移除的维度
+z = tf.squeeze(x, [0])
+print(sess.run(z))

@@ -1,8 +1,8 @@
 import tensorflow as tf
 import pickle
 import numpy as np
-from skimage import io
 import cv2 as cv
+import random
 
 
 # 把数据都读取到内存中
@@ -11,37 +11,52 @@ def load_file(file):
         return pickle.load(f, encoding="bytes")
 
 
-def inference(x, avg_class, w1, w2, w3, w4, b1, b2, b3, b4):
+def inference(x, avg_class, w1, w2, w3, w4, w5, b1, b2, b3, b4, b5):
     if avg_class is None:
-        layer1 = tf.nn.relu(tf.nn.conv2d(x, w1, strides=[1, 1, 1, 1], padding="SAME") + b1)
-        tf.contrib.layers.batch_norm()
-        layer1_d = tf.nn.dropout(layer1, 0.8)
-        layer1_pool = tf.nn.max_pool(layer1_d, [1, 2, 2, 1], [1, 2, 2, 1], padding="VALID")
+        conv_1 = tf.nn.conv2d(x, w1, strides=[1, 1, 1, 1], padding="SAME")
+        conv_1_bias = tf.nn.bias_add(conv_1, b1)
+        conv_1_relu = tf.nn.relu(conv_1_bias)
+        conv_1_pool = tf.nn.max_pool(conv_1_relu, [1, 2, 2, 1], [1, 2, 2, 1], padding="SAME")
+        conv_1_bn = tf.contrib.layers.batch_norm(conv_1_pool)
 
-        layer2 = tf.nn.relu(tf.nn.conv2d(layer1_pool, w2, strides=[1, 1, 1, 1], padding="SAME") + b2)
-        layer2_d = tf.nn.dropout(layer2, 0.5)
-        layer2_pool = tf.nn.max_pool(layer2_d, [1, 2, 2, 1], [1, 2, 2, 1], padding="VALID")
+        conv_2 = tf.nn.conv2d(conv_1_bn, w2, strides=[1, 1, 1, 1], padding="SAME")
+        conv_2_bias = tf.nn.bias_add(conv_2, b2)
+        conv_2_relu = tf.nn.relu(conv_2_bias)
+        conv_2_pool = tf.nn.max_pool(conv_2_relu, [1, 2, 2, 1], [1, 2, 2, 1], padding="SAME")
+        conv_2_bn = tf.contrib.layers.batch_norm(conv_2_pool)
 
-        layer2_flat = tf.reshape(layer2_pool, [-1, 4096])
+        shape = conv_2_bn.get_shape().as_list()
+        nodes = shape[1] * shape[2] * shape[3]
+        fc_flat = tf.reshape(conv_2_bn, [-1, nodes])
 
-        layer3 = tf.nn.relu(tf.matmul(layer2_flat, w3) + b3)
-        return tf.matmul(layer3, w4) + b4
+        fc_1 = tf.matmul(fc_flat, w3) + b3
+        fc_1_relu = tf.nn.relu(fc_1)
+        fc_1_dropout = tf.nn.dropout(fc_1_relu, 0.8)
+        fc_1_bn = tf.contrib.layers.batch_norm(fc_1_dropout)
+
+        return tf.matmul(fc_1_bn, w4) + b4
     else:
-        layer1_ = tf.nn.relu(
-            tf.nn.conv2d(x, avg_class.average(w1), strides=[1, 1, 1, 1], padding="SAME") + avg_class.average(b1))
-        layer1_d_ = tf.nn.dropout(layer1_, 0.8)
-        layer1_pool_ = tf.nn.max_pool(layer1_d_, [1, 2, 2, 1], [1, 2, 2, 1], padding="VALID")
+        conv_1 = tf.nn.conv2d(x, avg_class.average(w1), strides=[1, 1, 1, 1], padding="SAME")
+        conv_1_bias = tf.nn.bias_add(conv_1, avg_class.average(b1))
+        conv_1_relu = tf.nn.relu(conv_1_bias)
+        conv_1_pool = tf.nn.max_pool(conv_1_relu, [1, 2, 2, 1], [1, 2, 2, 1], padding="SAME")
+        conv_1_bn = tf.contrib.layers.batch_norm(conv_1_pool)
 
-        layer2_ = tf.nn.relu(
-            tf.nn.conv2d(layer1_pool_, avg_class.average(w2), strides=[1, 1, 1, 1], padding="SAME") + avg_class.average(
-                b2))
-        layer2_d_ = tf.nn.dropout(layer2_, 0.5)
-        layer2_pool_ = tf.nn.max_pool(layer2_d_, [1, 2, 2, 1], [1, 2, 2, 1], padding="VALID")
+        conv_2 = tf.nn.conv2d(conv_1_bn, avg_class.average(w2), strides=[1, 1, 1, 1], padding="SAME")
+        conv_2_bias = tf.nn.bias_add(conv_2, avg_class.average(b2))
+        conv_2_relu = tf.nn.relu(conv_2_bias)
+        conv_2_pool = tf.nn.max_pool(conv_2_relu, [1, 2, 2, 1], [1, 2, 2, 1], padding="SAME")
+        conv_2_bn = tf.contrib.layers.batch_norm(conv_2_pool)
 
-        layer2_flat_ = tf.reshape(layer2_pool_, [-1, 4096])
+        shape = conv_2_bn.get_shape().as_list()
+        nodes = shape[1] * shape[2] * shape[3]
+        fc_flat = tf.reshape(conv_2_bn, [-1, nodes])
 
-        layer3_ = tf.nn.relu(tf.matmul(layer2_flat_, avg_class.average(w3)) + avg_class.average(b3))
-        return tf.matmul(layer3_, avg_class.average(w4)) + avg_class.average(b4)
+        fc_1 = tf.matmul(fc_flat, avg_class.average(w3)) + avg_class.average(b3)
+        fc_1_relu = tf.nn.relu(fc_1)
+        fc_1_bn = tf.contrib.layers.batch_norm(fc_1_relu)
+
+        return tf.matmul(fc_1_bn, avg_class.average(w4)) + avg_class.average(b4)
 
 
 # 加载数据
@@ -76,16 +91,19 @@ b2 = tf.Variable(tf.zeros([64]))
 w3 = tf.Variable(tf.truncated_normal((4096, 256), stddev=0.01))
 b3 = tf.Variable(tf.zeros([256]))
 
-w4 = tf.Variable(tf.truncated_normal((256, 10), stddev=0.01))
-b4 = tf.Variable(tf.zeros([10]))
+w4 = tf.Variable(tf.truncated_normal((256, 128), stddev=0.01))
+b4 = tf.Variable(tf.zeros([128]))
+
+w5 = tf.Variable(tf.truncated_normal((128, 10), stddev=0.01))
+b5 = tf.Variable(tf.zeros([10]))
 
 global_step = tf.Variable(0, trainable=False)
 
-logits = inference(x, None, w1, w2, w3, w4, b1, b2, b3, b4)
+logits = inference(x, None, w1, w2, w3, w4, w5, b1, b2, b3, b4, b5)
 
 # 损失函数
 regularizer = tf.contrib.layers.l2_regularizer(0.001)
-regularization = regularizer(w1) + regularizer(w2) + regularizer(w3) + regularizer(w4)
+regularization = regularizer(w3) + regularizer(w4)
 
 loss_ = tf.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y, logits=logits))
 loss = loss_ + regularization
@@ -107,21 +125,31 @@ ema = tf.train.ExponentialMovingAverage(0.99, global_step)
 op_average_variables = ema.apply(tf.trainable_variables())
 
 # 预测，使用影子变量
-logits_ = inference(x, ema, w1, w2, w3, w4, b1, b2, b3, b4)
+logits_ = inference(x, ema, w1, w2, w3, w4, w5, b1, b2, b3, b4, b5)
 
 # 判断准确率
 correct_prediction = tf.equal(tf.cast(tf.arg_max(logits_, dimension=1), tf.int32), y)
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
+# update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+# with tf.control_dependencies(update_ops):
+#     train_op = optimizer.minimize(loss)
+
 with tf.control_dependencies([train_op_, op_average_variables]):
     train_op = tf.no_op("train")
 
-EPOCH_NUM = 5
+EPOCH_NUM = 8
 BATCH_SIZE = 64
 with tf.Session() as sess:
     tf.global_variables_initializer().run()
 
     for epoch in range(EPOCH_NUM):
+        # # 打乱顺序且保留对应关系
+        # random.seed(epoch)
+        # random.shuffle(images)
+        #
+        # random.seed(epoch)
+        # random.shuffle(labels)
         for i in range(len(images) // BATCH_SIZE):
             images_, labels_ = images[i * BATCH_SIZE:(i + 1) * BATCH_SIZE], labels[i * BATCH_SIZE:(i + 1) * BATCH_SIZE]
             _m, _loss = sess.run([train_op, loss], feed_dict={x: images_, y: labels_})
@@ -130,4 +158,4 @@ with tf.Session() as sess:
                 print(accuracy_)
 
     accuracy_ = sess.run(accuracy, feed_dict={x: test_images, y: test_labels})
-    print("EPOCH {} 准确率：{:.3f}".format(epoch + 1, accuracy_))
+    print("EPOCH {} 准确率：{:.2f}".format(epoch + 1, accuracy_))
