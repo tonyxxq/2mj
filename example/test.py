@@ -22,14 +22,16 @@ import random
 
 sess = tf.InteractiveSession()
 
-x = tf.constant([[[[1, 2, 3], [4, 5, 6], [7, 8, 9]]]])
-print("before shape：", x.get_shape())
-print(sess.run(x))
+x1 = tf.Variable(tf.constant(0))
+x2 = x1
 
-y = tf.squeeze(x)
-print("after shape：", y.get_shape())
-print(sess.run(y))
+print(x1.name)
+print(x2.name)
 
-# 也可指定要移除的维度
-z = tf.squeeze(x, [0])
-print(sess.run(z))
+sess.run(tf.global_variables_initializer())
+print(x1.eval())
+print(x2.eval())
+
+tf.assign(x1, 1).eval()
+print(x1.eval())
+print(x2.eval())
