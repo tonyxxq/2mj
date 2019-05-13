@@ -86,6 +86,7 @@ instance_per_shard = 2  # 每个文件数据的个数
 for i in range(num_shards):
     filename = ('data.tfrecords-%.5d-of%.5d' % (i, num_shards))
     writer = tf.python_io.TFRecordWriter(filename)
+    # 每个文件写入 instance_per_shard 个样例
     for j in range(instance_per_shard):
         example = tf.train.Example(features=tf.train.Features(feature={
             'i': _int64_feature(i),
@@ -97,12 +98,14 @@ for i in range(num_shards):
 # 模糊匹配获取文件列表
 files = tf.train.match_filenames_once("data.tfrecords-*")
 
-# 创建输入队列, num_epochs: 一共遍历文件的次数, shuffle: 是否打乱顺序　
+# 创建文件队列, num_epochs: 一共遍历文件的次数, shuffle: 是否打乱顺序
 filename_queue = tf.train.string_input_producer(files, shuffle=False, num_epochs=2)
 
-# 读取并解析一个样本
+# 从队列中读取并解析一个样本，执行 read 会建立一个样本队列
 reader = tf.TFRecordReader()
 _, serialized_example = reader.read(filename_queue)
+
+# 把读取的样本进行转换
 features = tf.parse_single_example(  # 读取单个样本，一个文件可能多个样本
     serialized=serialized_example,
     features={
@@ -112,7 +115,6 @@ features = tf.parse_single_example(  # 读取单个样本，一个文件可能�
 )
 
 # tf.train.shuffle_batch(num_threads=)
-
 with tf.Session() as sess:
     # print(tf.get_collection(tf.GraphKeys.LOCAL_VARIABLES))
     # train.match_filenames_once() 作为局部变量
@@ -120,9 +122,11 @@ with tf.Session() as sess:
     tf.initialize_local_variables().run()
     print(sess.run(files))
 
-    # 声明 Coordinator，并启动多线程
+    # 声明 Coordinator，当执行完 start_queue_runners 之后才会启动填充队列的线程
+    # 不然计算单元会一直阻塞
     coord = tf.train.Coordinator()
     threads = tf.train.start_queue_runners(sess=sess, coord=coord)
+    print(threads)
 
     # 多次执行获取数据操作
     for i in range(6):

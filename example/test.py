@@ -1,3 +1,4 @@
+# encoding=utf-8
 import tensorflow as tf
 import numpy as np
 
@@ -20,18 +21,14 @@ import numpy as np
 # https://blog.csdn.net/u014595019/article/details/52805444
 import random
 
-sess = tf.InteractiveSession()
+files = tf.train.string_input_producer([r'1.csv'], num_epochs=2, shuffle=True)
 
-x1 = tf.Variable(tf.constant(0))
-x2 = x1
+reader = tf.TextLineReader()
+key, line_content = reader.read(files)
 
-print(x1.name)
-print(x2.name)
-
-sess.run(tf.global_variables_initializer())
-print(x1.eval())
-print(x2.eval())
-
-tf.assign(x1, 1).eval()
-print(x1.eval())
-print(x2.eval())
+with tf.Session() as sess:
+    sess.run(tf.local_variables_initializer())
+    coord = tf.train.Coordinator()
+    tf.train.start_queue_runners(sess=sess, coord=coord)
+    for i in range(10):
+        print(sess.run(line_content))
