@@ -21,14 +21,23 @@ import numpy as np
 # https://blog.csdn.net/u014595019/article/details/52805444
 import random
 
-files = tf.train.string_input_producer([r'1.csv'], num_epochs=2, shuffle=True)
+# files = tf.train.string_input_producer([r'1.csv'], num_epochs=2, shuffle=True)
+#
+# reader = tf.TextLineReader()
+# key, line_content = reader.read(files)
+#
+# with tf.Session() as sess:
+#     sess.run(tf.local_variables_initializer())
+#     coord = tf.train.Coordinator()
+#     tf.train.start_queue_runners(sess=sess, coord=coord)
+#     for i in range(10):
+#         print(sess.run(line_content))
 
-reader = tf.TextLineReader()
-key, line_content = reader.read(files)
+sess = tf.InteractiveSession()
+path = tf.convert_to_tensor(['.'], dtype=tf.string)
+file_queue = tf.train.string_input_producer(path, num_epochs=1, capacity=2)
 
-with tf.Session() as sess:
-    sess.run(tf.local_variables_initializer())
-    coord = tf.train.Coordinator()
-    tf.train.start_queue_runners(sess=sess, coord=coord)
-    for i in range(10):
-        print(sess.run(line_content))
+image_reader = tf.WholeFileReader()
+key, image = image_reader.read(file_queue)
+
+print(image.eval())
