@@ -70,16 +70,17 @@ def inference(images, reuse):
         w1 = tf.get_variable(name="w1", shape=(784, 512), initializer=tf.truncated_normal_initializer(stddev=0.1))
         b1 = tf.get_variable(name="b1", shape=(512,), initializer=tf.zeros_initializer())
         layer_1_t = tf.nn.relu(tf.add(tf.matmul(images, w1), b1))
-
+        tf.add_to_collection("w1", w1)
     with tf.variable_scope("layer2", reuse=reuse):
         w2 = tf.get_variable(name="w2", shape=(512, 218), initializer=tf.truncated_normal_initializer(stddev=0.1))
         b2 = tf.get_variable(name="b2", shape=(218,), initializer=tf.zeros_initializer())
         layer_2_t = tf.nn.relu(tf.add(tf.matmul(layer_1_t, w2), b2))
-
+        tf.add_to_collection("w2", w2)
     with tf.variable_scope("output", reuse=reuse):
         w3 = tf.get_variable(name="w3", shape=(218, 10), initializer=tf.truncated_normal_initializer(stddev=0.1))
         b3 = tf.get_variable(name="b3", shape=(10,), initializer=tf.zeros_initializer())
         logits = tf.add(tf.matmul(layer_2_t, w3), b3, name="logits")
+        tf.add_to_collection("w3", w3)
 
     return logits
 
@@ -89,7 +90,7 @@ def read_tfr_data(path):
     读取数据
     """
     files = tf.train.match_filenames_once(path)
-    files_queue = tf.train.string_input_producer(files, shuffle=True, num_epochs=5)
+    files_queue = tf.train.string_input_producer(files, shuffle=True, num_epochs=1000)
 
     reader = tf.TFRecordReader()
     _, serialized_example = reader.read(files_queue)
@@ -116,6 +117,9 @@ BATCH_SIZE = 128
 capacity = 1000 + 3 * BATCH_SIZE
 train_labels, train_images = tf.train.batch([train_label, processed_train_img], BATCH_SIZE, num_threads=1,
                                             capacity=capacity)
+
+step = tf.Variable(0, dtype=tf.int32, trainable=False)
+
 # 前向传播
 train_logits = inference(train_images, False)
 
@@ -125,20 +129,22 @@ with tf.variable_scope("loss"):
 
     # 加上正则化项
     # regularizer = tf.contrib.layers.l2_regularizer(0.001)
+    # w1 = tf.get_collection("w1", "layer1")
+    # w2 = tf.get_collection("w2", "layer2")
+    # print(w2)
     # regularization = regularizer(w1) + regularizer(w2)
     # loss += regularization
 
 # minimize 的 global_step 会自动递增
 with tf.variable_scope('train'):
-    train_step = tf.train.GradientDescentOptimizer(0.001).minimize(loss)
-
+    train_step = tf.train.GradientDescentOptimizer(0.001).minimize(loss, global_step=step)
 
 # 测试数据
 test_image, test_label = read_tfr_data("mnist_tfr_test")
 processed_test_img = tf.reshape(test_image, (784,))
-test_labels, test_images = tf.train.batch([test_label, processed_test_img], 5000, num_threads=1,
+test_labels, test_images = tf.train.batch([test_label, processed_test_img], 5000, num_threads=10,
                                           capacity=5000)
-
+# 预测
 test_logits = inference(test_images, True)
 
 # 准确率
@@ -154,9 +160,13 @@ with tf.Session() as sess:
     threads = tf.train.start_queue_runners(coord=coord, sess=sess)
 
     # 训练
+    count = 0
     try:
         while not coord.should_stop():
-            sess.run(train_step)
+            _, step = sess.run((train_step, step))
+            count += 1
+            if step % 1000 == 0:
+                print("测试集准确率 {:.3f}".format(sess.run(accuracy)))
     except tf.errors.OutOfRangeError:
         print("训练完成")
     finally:
