@@ -71,11 +71,13 @@ def inference(images, reuse):
         b1 = tf.get_variable(name="b1", shape=(512,), initializer=tf.zeros_initializer())
         layer_1_t = tf.nn.relu(tf.add(tf.matmul(images, w1), b1))
         tf.add_to_collection("w1", w1)
+
     with tf.variable_scope("layer2", reuse=reuse):
         w2 = tf.get_variable(name="w2", shape=(512, 218), initializer=tf.truncated_normal_initializer(stddev=0.1))
         b2 = tf.get_variable(name="b2", shape=(218,), initializer=tf.zeros_initializer())
         layer_2_t = tf.nn.relu(tf.add(tf.matmul(layer_1_t, w2), b2))
         tf.add_to_collection("w2", w2)
+
     with tf.variable_scope("output", reuse=reuse):
         w3 = tf.get_variable(name="w3", shape=(218, 10), initializer=tf.truncated_normal_initializer(stddev=0.1))
         b3 = tf.get_variable(name="b3", shape=(10,), initializer=tf.zeros_initializer())
@@ -110,69 +112,78 @@ def read_tfr_data(path):
     return image, label
 
 
-# 训练数据
-train_image, train_label = read_tfr_data("mnist_tfr_*")
-processed_train_img = tf.reshape(train_image, (784,))
-BATCH_SIZE = 128
-capacity = 1000 + 3 * BATCH_SIZE
-train_labels, train_images = tf.train.batch([train_label, processed_train_img], BATCH_SIZE, num_threads=1,
-                                            capacity=capacity)
+def train():
+    # 训练数据
+    train_image, train_label = read_tfr_data("mnist_tfr_*")
+    processed_train_img = tf.reshape(train_image, (784,))
+    BATCH_SIZE = 128
+    capacity = 1000 + 3 * BATCH_SIZE
+    train_labels, train_images = tf.train.batch([train_label, processed_train_img], BATCH_SIZE, num_threads=1,
+                                                capacity=capacity)
 
-step = tf.Variable(0, dtype=tf.int32, trainable=False)
+    step = tf.Variable(0, dtype=tf.int32, trainable=False)
 
-# 前向传播
-train_logits = inference(train_images, False)
+    # 前向传播
+    train_logits = inference(train_images, False)
 
-with tf.variable_scope("loss"):
-    loss = tf.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=train_labels, logits=train_logits),
-                         name="loss")
+    with tf.variable_scope("loss"):
+        loss = tf.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=train_labels, logits=train_logits),
+                             name="loss")
 
-    # 加上正则化项
-    # regularizer = tf.contrib.layers.l2_regularizer(0.001)
-    # w1 = tf.get_collection("w1", "layer1")
-    # w2 = tf.get_collection("w2", "layer2")
-    # print(w2)
-    # regularization = regularizer(w1) + regularizer(w2)
-    # loss += regularization
+        # 加上正则化项
+        # regularizer = tf.contrib.layers.l2_regularizer(0.001)
+        # w1 = tf.get_collection("w1", "layer1")
+        # w2 = tf.get_collection("w2", "layer2")
+        # print(w2)
+        # regularization = regularizer(w1) + regularizer(w2)
+        # loss += regularization
 
-# minimize 的 global_step 会自动递增
-with tf.variable_scope('train'):
-    train_step = tf.train.GradientDescentOptimizer(0.001).minimize(loss, global_step=step)
+    # minimize 的 global_step 会自动递增
+    with tf.variable_scope('train'):
+        train_step = tf.train.GradientDescentOptimizer(0.001).minimize(loss, global_step=step)
 
-# 测试数据
-test_image, test_label = read_tfr_data("mnist_tfr_test")
-processed_test_img = tf.reshape(test_image, (784,))
-test_labels, test_images = tf.train.batch([test_label, processed_test_img], 5000, num_threads=10,
-                                          capacity=5000)
-# 预测
-test_logits = inference(test_images, True)
+    # 测试数据
+    test_image, test_label = read_tfr_data("mnist_tfr_test")
+    processed_test_img = tf.reshape(test_image, (784,))
+    test_labels, test_images = tf.train.batch([test_label, processed_test_img], 5000, num_threads=10,
+                                              capacity=5000)
+    # 预测
+    test_logits = inference(test_images, True)
 
-# 准确率
-with tf.variable_scope("accuracy"):
-    correct_prediction = tf.equal(test_labels, tf.argmax(test_logits, 1))
-    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    # 准确率
+    with tf.variable_scope("accuracy"):
+        correct_prediction = tf.equal(test_labels, tf.argmax(test_logits, 1))
+        accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
-with tf.Session() as sess:
-    sess.run(tf.local_variables_initializer())
-    tf.global_variables_initializer().run()
+    with tf.Session() as sess:
+        sess.run(tf.local_variables_initializer())
+        tf.global_variables_initializer().run()
 
-    coord = tf.train.Coordinator()
-    threads = tf.train.start_queue_runners(coord=coord, sess=sess)
+        coord = tf.train.Coordinator()
+        threads = tf.train.start_queue_runners(coord=coord, sess=sess)
 
-    # 训练
-    count = 0
-    try:
-        while not coord.should_stop():
-            _, step = sess.run((train_step, step))
-            count += 1
-            if step % 1000 == 0:
-                print("测试集准确率 {:.3f}".format(sess.run(accuracy)))
-    except tf.errors.OutOfRangeError:
-        print("训练完成")
-    finally:
-        coord.request_stop()
+        # 训练
+        count = 0
+        try:
+            while not coord.should_stop():
+                _, step = sess.run((train_step, step))
+                count += 1
+                if step % 1000 == 0:
+                    print("测试集准确率 {:.3f}".format(sess.run(accuracy)))
+        except tf.errors.OutOfRangeError:
+            print("训练完成")
+        finally:
+            coord.request_stop()
 
-    # 测试
-    print("测试集准确率 {:.3f}".format(sess.run(accuracy)))
+        # 测试
+        print("测试集准确率 {:.3f}".format(sess.run(accuracy)))
 
-coord.join(threads)
+    coord.join(threads)
+
+
+def test(argv=None):
+    train()
+
+
+if __name__ == '__main__':
+    tf.app.run(test)
